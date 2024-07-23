@@ -14,7 +14,7 @@ class Restaurant(Base):
     street = Column(String, nullable=False)
     city = Column(String, nullable=False)
     stars = Column(Integer, nullable=False)
-    category = Column(String, nullable=False)
+    category = Column(String, nullable=False) # povezati sa lookap tabelom
     distance_limit = Column(Float, nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -80,7 +80,7 @@ class Customer(Base):
     #ratings = relationship("Rating", back_populates="customer")
     #notifications = relationship("Notification", back_populates="customer")
 
-class Menu(Base):
+class Menu(Base): # dodati type i povezati sa lookap tabelom
     __tablename__ = 'menus'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
@@ -95,6 +95,7 @@ class Menu(Base):
     is_group = Column(Boolean, default=False)
 
     restaurant = relationship("Restaurant", back_populates="menus")
+    food_items = relationship("FoodItem", secondary="menu_fooditem", back_populates="menus")
 
 
 class Order(Base):
@@ -124,6 +125,29 @@ class RestaurantType(Base):
     __tablename__ = 'restaurant_types'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
+
+class FoodItem(Base):
+    __tablename__ = 'food_items'
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    price = Column(Float, nullable=False)
+    image_url = Column(String, nullable=True)
+    discount_start = Column(DateTime, nullable=True)
+    discount_end = Column(DateTime, nullable=True)
+    discount_price = Column(Float, nullable=True)
+    type_id = Column(Integer, ForeignKey('food_types.id'), nullable=False)
+    restaurant_id = Column(Integer, ForeignKey('restaurants.id'), nullable=False)
+    is_active = Column(Boolean, default=True)
+
+    type = relationship("FoodType")
+    restaurant = relationship("Restaurant")
+    menus = relationship("Menu", secondary="menu_fooditem", back_populates="food_items")
+
+class MenuFoodItem(Base):
+    __tablename__ = 'menu_fooditem'
+    menu_id = Column(Integer, ForeignKey('menus.id'), primary_key=True)
+    fooditem_id = Column(Integer, ForeignKey('food_items.id'), primary_key=True)
 
 ## Dodatni zahtjevi ##
 """

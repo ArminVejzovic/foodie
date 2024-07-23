@@ -17,25 +17,14 @@ export default function Login({ onRegisterClick }) {
   } = useForm();
 
   useEffect(() => {
-    // Check if the user is already logged in
     const token = localStorage.getItem("token");
-    if (token) {
-      axios.get("http://localhost:8000/get-role/me", {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      .then(response => {
-        // If token is valid, redirect to corresponding home page
-        const role = response.data.role.toLowerCase(); // Ensure role is in lowercase
-        router.push(`/home-${role}`);
-      })
-      .catch(error => {
-        // If token is invalid, remove it from localStorage
-        localStorage.removeItem("token");
-      });
+    const storedUsername = localStorage.getItem("username"); // Get stored username
+
+    if (token && storedUsername) {
+      // Ako postoji token i username, pokušaj dohvatiti ulogu i preusmjeri na odgovarajući dashboard
+      validateTokenAndRedirect(token, storedUsername);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (loginError) {
@@ -46,6 +35,51 @@ export default function Login({ onRegisterClick }) {
       return () => clearTimeout(timer);
     }
   }, [loginError]);
+
+  const validateTokenAndRedirect = async (token, storedUsername) => {
+    try {
+      // Provjera validnosti tokena
+      const response = await axios.get("http://localhost:8000/validate-token", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Ako je token validan, dohvatiti ulogu i preusmjeriti korisnika
+      if (response.data.valid) {
+        checkUserRoleAndRedirect(token, storedUsername);
+      } else {
+        // Ako token nije validan, obrisati podatke iz localStorage
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        localStorage.removeItem("role");
+      }
+    } catch (error) {
+      console.error("Error validating token:", error);
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      localStorage.removeItem("role");
+    }
+  };
+
+  const checkUserRoleAndRedirect = async (token, storedUsername) => {
+    try {
+      const roleResponse = await axios.get(`http://localhost:8000/get-role/${storedUsername}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const role = roleResponse.data.role.toLowerCase(); // Ensure role is in lowercase
+      console.log('Logged in as:', role); // Dodaj log za rolu
+
+      localStorage.setItem("role", role); // Spremi rolu u localStorage
+
+      router.push(`/home-${role}`);
+    } catch (error) {
+      console.error("Error checking role:", error);
+      // U slučaju greške, ne brišemo token
+    }
+  };
 
   const onSubmit = async (data) => {
     const formData = new URLSearchParams();
@@ -60,6 +94,7 @@ export default function Login({ onRegisterClick }) {
       });
       const token = response.data.access_token;
       localStorage.setItem("token", token);
+      localStorage.setItem("username", username); // Save username to localStorage
 
       const roleResponse = await axios.get(`http://localhost:8000/get-role/${username}`, {
         headers: {
@@ -67,6 +102,10 @@ export default function Login({ onRegisterClick }) {
         }
       });
       const role = roleResponse.data.role.toLowerCase(); // Ensure role is in lowercase
+      console.log('Logged in as:', role); // Dodaj log za rolu
+
+      localStorage.setItem("role", role); // Spremi rolu u localStorage
+
       router.push(`/home-${role}`);
     } catch (error) {
       if (error.response && error.response.status === 401) {

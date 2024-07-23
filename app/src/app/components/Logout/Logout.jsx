@@ -10,6 +10,8 @@ const Logout = () => {
     try {
       
       localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      localStorage.removeItem('role');
 
       router.push('/login');
     } catch (error) {
