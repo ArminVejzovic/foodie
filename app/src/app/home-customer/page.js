@@ -1,4 +1,4 @@
-import HomeCustomerComponent from '../../components/HomeCustomer/HomeCustomer.jsx'
+import HomeCustomerComponent from '../components/HomeCustomer/HomeCustomer.jsx'
 
 const HomeCustomer = () => {
   return (

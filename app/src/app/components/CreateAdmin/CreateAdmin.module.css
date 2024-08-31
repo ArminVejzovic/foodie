@@ -1,6 +1,15 @@
+.pageContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f0f0;
+}
+
 .formContainer {
+  width: 100%;
   max-width: 600px;
-  margin: auto;
+  margin: 20px;
   padding: 20px;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -43,10 +52,29 @@
   padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .submitButton:hover {
   background-color: #0056b3;
+}
+
+.backButton {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  padding: 5px 5px;
+  background-color: darkgray;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+
+.backButton:hover {
+  background-color: gray;
 }
 
 .passwordWrapper {

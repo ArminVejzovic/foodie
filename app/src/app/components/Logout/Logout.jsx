@@ -1,14 +1,13 @@
-"use client"
+"use client";
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios'; // Import axios for making HTTP requests
+import styles from './Logout.module.css';
 
 const Logout = () => {
   const router = useRouter();
 
   const handleLogout = async () => {
     try {
-      
       localStorage.removeItem('token');
       localStorage.removeItem('username');
       localStorage.removeItem('role');
@@ -16,12 +15,14 @@ const Logout = () => {
       router.push('/login');
     } catch (error) {
       console.error('Failed to logout:', error);
-      // Handle error if logout fails
+      alert('An error occurred while logging out. Please try again.');
     }
   };
 
   return (
-    <button onClick={handleLogout}>Logout</button>
+    <div className={styles.container}>
+      <button className={styles.button} onClick={handleLogout}>Logout</button>
+    </div>
   );
 }
 

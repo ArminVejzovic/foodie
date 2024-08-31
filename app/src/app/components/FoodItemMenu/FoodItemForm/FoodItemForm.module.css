@@ -1,0 +1,104 @@
+.foodItemForm {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-family: Arial, sans-serif;
+}
+
+.foodItemForm input,
+.foodItemForm textarea,
+.foodItemForm select {
+  margin-bottom: 15px;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.foodItemForm input[type="file"] {
+  padding: 3px;
+}
+
+.foodItemForm button {
+  padding: 10px;
+  font-size: 18px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.foodItemForm button:hover {
+  background-color: #45a049;
+}
+
+.imagePreviewContainer {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.imagePreview {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 8px;
+  margin-right: 10px;
+}
+
+.removeImageButton {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.removeImageButton:hover {
+  background-color: #c82333;
+}
+
+.error {
+  color: red;
+  text-align: center;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.backButton {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  padding: 5px 5px;
+  background-color: darkgray;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+
+.backButton:hover {
+  background-color: gray;
+}
+
+@media (max-width: 768px) {
+  .foodItemForm {
+    padding: 15px;
+  }
+
+  .foodItemForm button {
+    font-size: 16px;
+  }
+}

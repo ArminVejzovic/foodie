@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, Text
+from sqlalchemy import Column, Integer, LargeBinary, String, Float, Boolean, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
@@ -23,6 +23,7 @@ class Restaurant(Base):
     orders = relationship("Order", back_populates="restaurant")
     deliverers = relationship("Deliverer", back_populates="restaurant")
     restaurant_admins = relationship("RestaurantAdmin", back_populates="restaurant")
+    food_items = relationship("FoodItem", back_populates="restaurant")
     #ratings = relationship("Rating", back_populates="restaurant")
     #notifications = relationship("Notification", back_populates="restaurant")
 
@@ -80,22 +81,15 @@ class Customer(Base):
     #ratings = relationship("Rating", back_populates="customer")
     #notifications = relationship("Notification", back_populates="customer")
 
-class Menu(Base): # dodati type i povezati sa lookap tabelom
+class Menu(Base):
     __tablename__ = 'menus'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
-    name = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    price = Column(Float, nullable=False)
+    food_item_id = Column(Integer, ForeignKey('food_items.id'))
     is_active = Column(Boolean, default=True)
-    image_url = Column(String, nullable=True)
-    discount_start = Column(DateTime, nullable=True)
-    discount_end = Column(DateTime, nullable=True)
-    discount_price = Column(Float, nullable=True)
-    is_group = Column(Boolean, default=False)
 
     restaurant = relationship("Restaurant", back_populates="menus")
-    food_items = relationship("FoodItem", secondary="menu_fooditem", back_populates="menus")
+    food_item = relationship("FoodItem", back_populates="menus")
 
 
 class Order(Base):
@@ -104,16 +98,27 @@ class Order(Base):
     customer_id = Column(Integer, ForeignKey('customers.id'))
     restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
     deliverer_id = Column(Integer, ForeignKey('deliverers.id'), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    delivery_time = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)     # fix this to be european time *******************
+    delivered_time = Column(DateTime, nullable=True)  # Time when deliverer delivered order
+    delivery_time = Column(DateTime, nullable=True)  # Time when customer wants to deliver order
     status = Column(String, default="pending")
     total_price = Column(Float, nullable=False)
-    quantity = Column(Integer, nullable=False)
     payment_method = Column(String, nullable=False)
 
     customer = relationship("Customer", back_populates="orders")
     restaurant = relationship("Restaurant", back_populates="orders")
     deliverer = relationship("Deliverer", back_populates="orders")
+
+    food_items = relationship("OrderFoodItem", back_populates="order")
+
+class OrderFoodItem(Base):
+    __tablename__ = 'order_fooditem'
+    order_id = Column(Integer, ForeignKey('orders.id'), primary_key=True)
+    food_item_id = Column(Integer, ForeignKey('food_items.id'), primary_key=True)
+    quantity = Column(Integer, nullable=False, default=1)
+
+    order = relationship("Order", back_populates="food_items")
+    food_item = relationship("FoodItem", back_populates="orders")
 
 
 class FoodType(Base):
@@ -132,7 +137,7 @@ class FoodItem(Base):
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     price = Column(Float, nullable=False)
-    image_url = Column(String, nullable=True)
+    image = Column(LargeBinary, nullable=True)
     discount_start = Column(DateTime, nullable=True)
     discount_end = Column(DateTime, nullable=True)
     discount_price = Column(Float, nullable=True)
@@ -142,7 +147,9 @@ class FoodItem(Base):
 
     type = relationship("FoodType")
     restaurant = relationship("Restaurant")
-    menus = relationship("Menu", secondary="menu_fooditem", back_populates="food_items")
+    menus = relationship("Menu", back_populates="food_item")
+    
+    orders = relationship("OrderFoodItem", back_populates="food_item")
 
 class MenuFoodItem(Base):
     __tablename__ = 'menu_fooditem'

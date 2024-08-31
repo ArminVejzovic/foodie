@@ -1,0 +1,116 @@
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 20px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  margin-bottom: 20px;
+  font-size: small;
+  word-wrap: break-word;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+}
+
+.table th, .table td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+  background-color: #fff;
+}
+
+.table tr {
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.table tr:nth-child(even) {
+  background-color: #e9ecef;
+}
+
+.table tr td {
+  border-bottom: 1px solid #ccc;
+}
+
+.table tr td:last-child {
+  border-bottom: none;
+}
+
+.table tr:hover {
+  background-color: #dee2e6;
+}
+
+.heading {
+  margin-top: 50px;
+  margin-left: 25px;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.backButton {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 10px 15px;
+  background-color: darkgray;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.backButton:hover {
+  background-color: gray;
+}
+
+@media (max-width: 768px) {
+  .table-container {
+    padding: 0 10px;
+  }
+
+  .table, .table thead, .table tbody, .table th, .table td, .table tr {
+    display: block;
+  }
+
+  .table th {
+    color: black;
+    font-weight: bold;
+    padding-top: 12px;
+  }
+
+  .table tr {
+    margin-bottom: 20px;
+  }
+
+  .table td {
+    padding: 8px;
+    position: relative;
+    text-align: left;
+    padding-left: 50%;
+    white-space: nowrap;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #555;
+  }
+
+  .backButton {
+    top: 5px;
+    left: 5px;
+    padding: 5px 10px;
+    font-size: 0.9rem;
+  }
+}

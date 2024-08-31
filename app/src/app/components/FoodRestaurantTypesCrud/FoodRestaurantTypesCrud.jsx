@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useForm } from 'react-hook-form';
 import styles from './FoodRestaurantTypesCrud.module.css';
 import { useRouter } from 'next/navigation';
+import { FaArrowLeft } from 'react-icons/fa'; 
 
 const FoodRestaurantsTypesCrud = () => {
   const [foodTypes, setFoodTypes] = useState([]);
@@ -12,33 +13,40 @@ const FoodRestaurantsTypesCrud = () => {
   const [loadingRestaurantTypes, setLoadingRestaurantTypes] = useState(true);
   const [editingFoodType, setEditingFoodType] = useState(null);
   const [editingRestaurantType, setEditingRestaurantType] = useState(null);
-
+  const [errorMessage, setErrorMessage] = useState(null);
+  
   const { register: registerFood, handleSubmit: handleSubmitFood, formState: { errors: errorsFood }, reset: resetFood, setValue: setValueFood } = useForm();
   const { register: registerRestaurant, handleSubmit: handleSubmitRestaurant, formState: { errors: errorsRestaurant }, reset: resetRestaurant, setValue: setValueRestaurant } = useForm();
-  const router = useRouter()
+  const router = useRouter();
 
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
+    document.title = "CRUD FoodTypes and RestaurantTypes - Admin";
+    const favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.href = '/favicon_foodie.png';
+    document.head.appendChild(favicon);
+
     const checkAuth = () => {
       const role = localStorage.getItem('role');
-      console.log('Role in component:', role); // Log role for debugging
       
       if (role === 'admin') {
         setIsAuthorized(true);
       } else {
-        console.log('Role does not match admin, redirecting to /notauthenticated');
         router.push('/notauthenticated');
       }
-      setLoading(false); // Always set loading to false at the end
     };
 
     checkAuth();
   }, [router]);
-  
-  if (!isAuthorized) {
-    return null;
-  }
+
+  useEffect(() => {
+    if (isAuthorized) {
+      fetchFoodTypes();
+      fetchRestaurantTypes();
+    }
+  }, [isAuthorized]);
 
   const fetchFoodTypes = async () => {
     setLoadingFoodTypes(true);
@@ -76,6 +84,8 @@ const FoodRestaurantsTypesCrud = () => {
       setEditingFoodType(null);
     } catch (error) {
       console.error('Error saving food type:', error);
+      setErrorMessage('Error saving food type.');
+      setTimeout(() => setErrorMessage(null), 5000);
     }
   };
 
@@ -91,6 +101,8 @@ const FoodRestaurantsTypesCrud = () => {
       setEditingRestaurantType(null);
     } catch (error) {
       console.error('Error saving restaurant type:', error);
+      setErrorMessage('Error saving restaurant type.');
+      setTimeout(() => setErrorMessage(null), 5000);
     }
   };
 
@@ -110,6 +122,8 @@ const FoodRestaurantsTypesCrud = () => {
       fetchFoodTypes();
     } catch (error) {
       console.error('Error deleting food type:', error);
+      setErrorMessage('Cannot delete food type. It is referenced by one or more food items.');
+      setTimeout(() => setErrorMessage(null), 5000);
     }
   };
 
@@ -119,12 +133,27 @@ const FoodRestaurantsTypesCrud = () => {
       fetchRestaurantTypes();
     } catch (error) {
       console.error('Error deleting restaurant type:', error);
+      setErrorMessage('Cannot delete restaurant type. It is referenced by one or more restaurants.');
+      setTimeout(() => setErrorMessage(null), 5000);
     }
   };
 
+  const handleGoBack = () => {
+    router.back();
+  };
+
+  if (!isAuthorized) {
+    return null;
+  }
+
   return (
     <div className={styles.container}>
+      <button className={styles.backButton} onClick={handleGoBack}>
+          <FaArrowLeft size={20} />
+      </button>
       <h1 className={styles.title}>CRUD Operations</h1>
+
+      {errorMessage && <p className={styles.error}>{errorMessage}</p>}
 
       <section>
         <h2 className={styles.sectionTitle}>Food Types</h2>
@@ -132,7 +161,7 @@ const FoodRestaurantsTypesCrud = () => {
           <input {...registerFood('name', { required: 'Name is required' })} placeholder="Food Type Name" className={styles.input} />
           {errorsFood.name && <span className={styles.error}>{errorsFood.name.message}</span>}
           <button type="submit" className={styles.button}>{editingFoodType ? 'Update' : 'Add'} Food Type</button>
-          {editingFoodType && <button type="button" className={styles.button} onClick={() => { resetFood(); setEditingFoodType(null); }}>Cancel</button>}
+          {editingFoodType && <button type="button" className={`${styles.button} ${styles.cancelButton}`} onClick={() => { resetFood(); setEditingFoodType(null); }}>Cancel</button>}
         </form>
         {loadingFoodTypes ? (
           <p>Loading...</p>
@@ -155,7 +184,7 @@ const FoodRestaurantsTypesCrud = () => {
           <input {...registerRestaurant('name', { required: 'Name is required' })} placeholder="Restaurant Type Name" className={styles.input} />
           {errorsRestaurant.name && <span className={styles.error}>{errorsRestaurant.name.message}</span>}
           <button type="submit" className={styles.button}>{editingRestaurantType ? 'Update' : 'Add'} Restaurant Type</button>
-          {editingRestaurantType && <button type="button" className={styles.button} onClick={() => { resetRestaurant(); setEditingRestaurantType(null); }}>Cancel</button>}
+          {editingRestaurantType && <button type="button" className={`${styles.button} ${styles.cancelButton}`} onClick={() => { resetRestaurant(); setEditingRestaurantType(null); }}>Cancel</button>}
         </form>
         {loadingRestaurantTypes ? (
           <p>Loading...</p>

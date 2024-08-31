@@ -5,6 +5,8 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useRouter } from 'next/navigation';
+import styles from './Restaurants.module.css';
+import { FaArrowLeft } from 'react-icons/fa'; 
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -15,7 +17,6 @@ L.Icon.Default.mergeOptions({
 });
 
 const Restaurants = () => {
-  const [restaurants, setRestaurants] = useState([]);
   const [activeRestaurants, setActiveRestaurants] = useState([]);
   const [archivedRestaurants, setArchivedRestaurants] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
@@ -39,59 +40,70 @@ const Restaurants = () => {
     category: '',
     distance_limit: ''
   });
+  const [restaurantTypes, setRestaurantTypes] = useState([]);
+  const [loadingRestaurantTypes, setLoadingRestaurantTypes] = useState(false);
   const router = useRouter();
-
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    document.title = "Restaurants - Admin";
+    const favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.href = '/favicon_foodie.png';
+    document.head.appendChild(favicon);
+
     const checkAuth = () => {
       const role = localStorage.getItem('role');
-      console.log('Role in component:', role); // Log role for debugging
       
       if (role === 'admin') {
         setIsAuthorized(true);
       } else {
-        console.log('Role does not match admin, redirecting to /notauthenticated');
         router.push('/notauthenticated');
       }
-      setLoading(false); // Always set loading to false at the end
+      setLoading(false);
     };
 
     checkAuth();
   }, [router]);
   
-  if (!isAuthorized) {
-    return null;
-  }
-
-  if(loading) return <div>Loading...</div>
-
-  const fetchRestaurants = async () => {
-    const response = await axios.get('http://localhost:8000/restaurants');
-    setRestaurants(response.data);
-  };
+  useEffect(() => {
+    if (isAuthorized) {
+      fetchActiveRestaurants();
+      fetchArchivedRestaurants();
+      fetchRestaurantTypes();
+    }
+  }, [isAuthorized]);
 
   const fetchActiveRestaurants = async () => {
-    const response = await axios.get('http://localhost:8000/restaurants/active');
+    const response = await axios.get('http://localhost:8000/restaurants/active-restaurnats');
     setActiveRestaurants(response.data);
   };
 
   const fetchArchivedRestaurants = async () => {
-    const response = await axios.get('http://localhost:8000/restaurants/archived');
-    setArchivedRestaurants(response.data);
+    try {
+      const response = await axios.get('http://localhost:8000/restaurants/archived-restaurnats');
+      setArchivedRestaurants(response.data);
+    } catch (error) {
+      console.error('Error fetching archived restaurants:', error);
+    }
   };
 
-  useEffect(() => {
-    fetchRestaurants();
-    fetchActiveRestaurants();
-    fetchArchivedRestaurants();
-  }, []);
+  const fetchRestaurantTypes = async () => {
+    setLoadingRestaurantTypes(true);
+    try {
+      const response = await axios.get('http://localhost:8000/restaurant_types');
+      setRestaurantTypes(response.data);
+    } catch (error) {
+      console.error('Error fetching restaurant types:', error);
+    } finally {
+      setLoadingRestaurantTypes(false);
+    }
+  };
 
   const createRestaurant = async () => {
     try {
       await axios.post('http://localhost:8000/restaurants', newRestaurant);
-      fetchRestaurants();
       fetchActiveRestaurants();
       setNewRestaurant({
         name: '',
@@ -112,7 +124,6 @@ const Restaurants = () => {
     try {
       if (selectedRestaurant) {
         await axios.put(`http://localhost:8000/restaurants/${selectedRestaurant.id}`, editRestaurant);
-        fetchRestaurants();
         fetchActiveRestaurants();
         setSelectedRestaurant(null);
         setEditRestaurant({
@@ -134,7 +145,6 @@ const Restaurants = () => {
   const archiveRestaurant = async (id) => {
     try {
       await axios.put(`http://localhost:8000/restaurants/${id}/archive`);
-      fetchRestaurants();
       fetchActiveRestaurants();
       fetchArchivedRestaurants();
     } catch (error) {
@@ -145,7 +155,6 @@ const Restaurants = () => {
   const restoreRestaurant = async (id) => {
     try {
       await axios.put(`http://localhost:8000/restaurants/${id}/restore`);
-      fetchRestaurants();
       fetchActiveRestaurants();
       fetchArchivedRestaurants();
     } catch (error) {
@@ -189,181 +198,202 @@ const Restaurants = () => {
     ) : null;
   };
 
+  const handleGoBack = () => {
+    router.back();
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (!isAuthorized) return null;
+
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ marginBottom: '20px', textAlign: 'center' }}>Restaurants Management</h1>
-      <div style={{ marginBottom: '20px' }}>
-        <h2>Create Restaurant</h2>
+    <div className={styles.container}>
+      <button className={styles.backButton} onClick={handleGoBack}>
+        <FaArrowLeft size={20} />
+      </button>
+      <h1 className={styles.title}>Restaurants Management</h1>
+      <div className={styles.section}>
+        <h2 className={styles.subtitle}>Create Restaurant</h2>
         <p>Pick a location of restaurant</p>
-        <MapContainer center={[43.856430, 18.413029]} zoom={15} style={{ height: '400px', marginTop: '20px' }}>
+        <MapContainer center={[43.856430, 18.413029]} zoom={15} className={styles.mapContainer}>
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <LocationMarker />
         </MapContainer>
-        <br></br>
-        <input
-          type="text"
-          placeholder="Name"
-          value={newRestaurant.name}
-          onChange={(e) => setNewRestaurant({ ...newRestaurant, name: e.target.value })}
-          style={{ marginRight: '10px', padding: '5px' }}
-        />
-        <input
-          type="text"
-          placeholder="Latitude"
-          value={newRestaurant.latitude}
-          onChange={(e) => setNewRestaurant({ ...newRestaurant, latitude: e.target.value })}
-          style={{ marginRight: '10px', padding: '5px' }}
-        />
-        <input
-          type="text"
-          placeholder="Longitude"
-          value={newRestaurant.longitude}
-          onChange={(e) => setNewRestaurant({ ...newRestaurant, longitude: e.target.value })}
-          style={{ marginRight: '10px', padding: '5px' }}
-        />
-        <input
-          type="text"
-          placeholder="Street"
-          value={newRestaurant.street}
-          onChange={(e) => setNewRestaurant({ ...newRestaurant, street: e.target.value })}
-          style={{ marginRight: '10px', padding: '5px' }}
-        />
-        <input
-          type="text"
-          placeholder="City"
-          value={newRestaurant.city}
-          onChange={(e) => setNewRestaurant({ ...newRestaurant, city: e.target.value })}
-          style={{ marginRight: '10px', padding: '5px' }}
-        />
-        <input
-          type="number"
-          placeholder="Stars"
-          value={newRestaurant.stars}
-          onChange={(e) => setNewRestaurant({ ...newRestaurant, stars: e.target.value })}
-          style={{ marginRight: '10px', padding: '5px' }}
-        />
-        <input
-          type="text"
-          placeholder="Category"
-          value={newRestaurant.category}
-          onChange={(e) => setNewRestaurant({ ...newRestaurant, category: e.target.value })}
-          style={{ marginRight: '10px', padding: '5px' }}
-        />
-        <input
-          type="text"
-          placeholder="Distance Limit"
-          value={newRestaurant.distance_limit}
-          onChange={(e) => setNewRestaurant({ ...newRestaurant, distance_limit: e.target.value })}
-          style={{ marginRight: '10px', padding: '5px' }}
-        />
-        <br></br>
-        <button onClick={createRestaurant} style={{ padding: '5px 10px' }}>Create</button>
-      </div>
-
-      <div style={{ marginBottom: '20px' }}>
-        <h2>Active Restaurants</h2>
-        <ul>
-          {activeRestaurants.map((restaurant) => (
-            <li key={restaurant.id} style={{ marginBottom: '10px' }}>
-              {restaurant.name}
-              <button
-                onClick={() => handleEditClick(restaurant)}
-                style={{ marginLeft: '10px', padding: '5px' }}
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => archiveRestaurant(restaurant.id)}
-                style={{ marginLeft: '10px', padding: '5px' }}
-              >
-                Archive
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {selectedRestaurant && (
-        <div style={{ marginBottom: '20px' }}>
-          <h2>Edit Restaurant</h2>
+        <div className={styles.formGroup}>
           <input
             type="text"
             placeholder="Name"
-            value={editRestaurant.name}
-            onChange={(e) => setEditRestaurant({ ...editRestaurant, name: e.target.value })}
-            style={{ marginRight: '10px', padding: '5px' }}
+            value={newRestaurant.name}
+            onChange={(e) => setNewRestaurant({ ...newRestaurant, name: e.target.value })}
+            className={styles.input}
           />
           <input
             type="text"
             placeholder="Latitude"
-            value={editRestaurant.latitude}
-            onChange={(e) => setEditRestaurant({ ...editRestaurant, latitude: e.target.value })}
-            style={{ marginRight: '10px', padding: '5px' }}
+            value={newRestaurant.latitude}
+            onChange={(e) => setNewRestaurant({ ...newRestaurant, latitude: e.target.value })}
+            className={styles.input}
           />
           <input
             type="text"
             placeholder="Longitude"
-            value={editRestaurant.longitude}
-            onChange={(e) => setEditRestaurant({ ...editRestaurant, longitude: e.target.value })}
-            style={{ marginRight: '10px', padding: '5px' }}
+            value={newRestaurant.longitude}
+            onChange={(e) => setNewRestaurant({ ...newRestaurant, longitude: e.target.value })}
+            className={styles.input}
           />
           <input
             type="text"
             placeholder="Street"
-            value={editRestaurant.street}
-            onChange={(e) => setEditRestaurant({ ...editRestaurant, street: e.target.value })}
-            style={{ marginRight: '10px', padding: '5px' }}
+            value={newRestaurant.street}
+            onChange={(e) => setNewRestaurant({ ...newRestaurant, street: e.target.value })}
+            className={styles.input}
           />
           <input
             type="text"
             placeholder="City"
-            value={editRestaurant.city}
-            onChange={(e) => setEditRestaurant({ ...editRestaurant, city: e.target.value })}
-            style={{ marginRight: '10px', padding: '5px' }}
+            value={newRestaurant.city}
+            onChange={(e) => setNewRestaurant({ ...newRestaurant, city: e.target.value })}
+            className={styles.input}
           />
           <input
             type="number"
             placeholder="Stars"
-            value={editRestaurant.stars}
-            onChange={(e) => setEditRestaurant({ ...editRestaurant, stars: e.target.value })}
-            style={{ marginRight: '10px', padding: '5px' }}
+            value={newRestaurant.stars}
+            onChange={(e) => setNewRestaurant({ ...newRestaurant, stars: e.target.value })}
+            className={styles.input}
           />
+          <select
+            value={newRestaurant.category}
+            onChange={(e) => setNewRestaurant({ ...newRestaurant, category: e.target.value })}
+            className={styles.input}
+          >
+            <option value="">Select Category</option>
+            {restaurantTypes.map((type) => (
+              <option key={type.id} value={type.name}>
+                {type.name}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
-            placeholder="Category"
-            value={editRestaurant.category}
-            onChange={(e) => setEditRestaurant({ ...editRestaurant, category: e.target.value })}
-            style={{ marginRight: '10px', padding: '5px' }}
+            placeholder="Distance Limit (km)"
+            value={newRestaurant.distance_limit}
+            onChange={(e) => setNewRestaurant({ ...newRestaurant, distance_limit: e.target.value })}
+            className={styles.input}
           />
-          <input
-            type="text"
-            placeholder="Distance Limit"
-            value={editRestaurant.distance_limit}
-            onChange={(e) => setEditRestaurant({ ...editRestaurant, distance_limit: e.target.value })}
-            style={{ marginRight: '10px', padding: '5px' }}
-          />
-          <button onClick={updateRestaurant} style={{ padding: '5px 10px' }}>Update</button>
-          <button onClick={cancelEdit} style={{ padding: '5px 10px', marginLeft: '10px' }}>Cancel</button>
+        </div>
+        <button onClick={createRestaurant} className={styles.button}>Create</button>
+      </div>
+
+      <div className={styles.section}>
+        <h2 className={styles.subtitle}>Active Restaurants</h2>
+        {activeRestaurants.length === 0 ? (
+          <p>There are no active restaurants.</p>
+        ) : (
+          <ul className={styles.list}>
+            {activeRestaurants.map((restaurant) => (
+              <li key={restaurant.id} className={styles.listItem}>
+                <strong>{restaurant.name}</strong>
+                <div>
+                  <button onClick={() => handleEditClick(restaurant)} className={styles.button}>Edit</button>
+                  <button onClick={() => archiveRestaurant(restaurant.id)} className={styles.button}>Archive</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {selectedRestaurant && (
+        <div className={styles.section}>
+          <h2 className={styles.subtitle}>Edit Restaurant</h2>
+          <div className={styles.formGroup}>
+            <input
+              type="text"
+              placeholder="Name"
+              value={editRestaurant.name}
+              onChange={(e) => setEditRestaurant({ ...editRestaurant, name: e.target.value })}
+              className={styles.input}
+            />
+            <input
+              type="text"
+              placeholder="Latitude"
+              value={editRestaurant.latitude}
+              onChange={(e) => setEditRestaurant({ ...editRestaurant, latitude: e.target.value })}
+              className={styles.input}
+            />
+            <input
+              type="text"
+              placeholder="Longitude"
+              value={editRestaurant.longitude}
+              onChange={(e) => setEditRestaurant({ ...editRestaurant, longitude: e.target.value })}
+              className={styles.input}
+            />
+            <input
+              type="text"
+              placeholder="Street"
+              value={editRestaurant.street}
+              onChange={(e) => setEditRestaurant({ ...editRestaurant, street: e.target.value })}
+              className={styles.input}
+            />
+            <input
+              type="text"
+              placeholder="City"
+              value={editRestaurant.city}
+              onChange={(e) => setEditRestaurant({ ...editRestaurant, city: e.target.value })}
+              className={styles.input}
+            />
+            <input
+              type="number"
+              placeholder="Stars"
+              value={editRestaurant.stars}
+              onChange={(e) => setEditRestaurant({ ...editRestaurant, stars: e.target.value })}
+              className={styles.input}
+            />
+            <select
+              value={editRestaurant.category}
+              onChange={(e) => setEditRestaurant({ ...editRestaurant, category: e.target.value })}
+              className={styles.input}
+            >
+              <option value="">Select Category</option>
+              {restaurantTypes.map((type) => (
+                <option key={type.id} value={type.name}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              placeholder="Distance Limit (km)"
+              value={editRestaurant.distance_limit}
+              onChange={(e) => setEditRestaurant({ ...editRestaurant, distance_limit: e.target.value })}
+              className={styles.input}
+            />
+          </div>
+          <div className={styles.buttonGroup}>
+            <button onClick={updateRestaurant} className={styles.button}>Update</button>
+            <button onClick={cancelEdit} className={styles.button}>Cancel</button>
+          </div>
         </div>
       )}
 
-      <div>
-        <h2>Archived Restaurants</h2>
-        <ul>
-          {archivedRestaurants.map((restaurant) => (
-            <li key={restaurant.id} style={{ marginBottom: '10px' }}>
-              {restaurant.name}
-              <button
-                onClick={() => restoreRestaurant(restaurant.id)}
-                style={{ marginLeft: '10px', padding: '5px' }}
-              >
-                Restore
-              </button>
-            </li>
-          ))}
-        </ul>
+      <div className={styles.section}>
+        <h2 className={styles.subtitle}>Archived Restaurants</h2>
+        {archivedRestaurants.length === 0 ? (
+          <p>There are no archived restaurants.</p>
+        ) : (
+          <ul className={styles.list}>
+            {archivedRestaurants.map((restaurant) => (
+              <li key={restaurant.id} className={styles.listItem}>
+                <strong>{restaurant.name}</strong>
+                <div>
+                  <button onClick={() => restoreRestaurant(restaurant.id)} className={styles.button}>Restore</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

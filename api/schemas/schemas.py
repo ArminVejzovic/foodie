@@ -7,6 +7,17 @@ class UserBase(BaseModel):
     username: str
     email: str
 
+class ApplyDeliverer(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str
+
+class ApplyPartner(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str
+
+
 class CustomerCreate(UserBase):
     password: str
     first_name: str
@@ -40,8 +51,6 @@ class TokenData(BaseModel):
     username: str | None = None
     role: str | None = None
 
-# Admin
-
 class RestaurantCreate(BaseModel):
     name: str
     latitude: float
@@ -69,11 +78,11 @@ class FoodTypeCreate(BaseModel):
 class RestaurantTypeCreate(BaseModel):
     name: str
 
-class FoodItemBase(BaseModel):
+class FoodItemCreate(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
-    image_url: Optional[str] = None
+    image: Optional[str] = None
     discount_start: Optional[datetime] = None
     discount_end: Optional[datetime] = None
     discount_price: Optional[float] = None
@@ -81,33 +90,43 @@ class FoodItemBase(BaseModel):
     restaurant_id: int
     is_active: Optional[bool] = True
 
-class FoodItemCreate(FoodItemBase):
-    pass
-
-class FoodItem(FoodItemBase):
-    id: int
-
-    class Config:
-        orm_mode = True
-
-class MenuBase(BaseModel):
-    name: str
+class FoodItemUpdate(FoodItemCreate):
+    name: Optional[str] = None
     description: Optional[str] = None
-    price: float
-    image_url: Optional[str] = None
+    price: Optional[float] = None
+    image: Optional[str] = None
     discount_start: Optional[datetime] = None
     discount_end: Optional[datetime] = None
     discount_price: Optional[float] = None
-    restaurant_id: int
-    is_group: Optional[bool] = False
-    is_active: Optional[bool] = True
+    type_id: Optional[int] = None
+    restaurant_id: Optional[int] = None
 
-class MenuCreate(MenuBase):
-    item_ids: List[int] = []
+class ApproveOrderRequest(BaseModel):
+    status: str
 
-class Menu(MenuBase):
+class AssignOrderRequest(BaseModel):
+    deliverer_id: int
+
+class DelivererResponse(BaseModel):
     id: int
-    food_items: List[FoodItem] = []
+    username: str
 
-    class Config:
-        orm_mode = True
+class StatusUpdate(BaseModel):
+    status: str
+
+class OrderResponse(BaseModel):
+    id: int
+    status: str
+    total_price: float
+    deliverer_id: int | None
+    deliverer_username: str | None
+    delivery_time: str = None
+
+class OrderItemCreate(BaseModel):
+    food_item_id: int
+    quantity: int
+
+class OrderCreate(BaseModel):
+    cart: list[OrderItemCreate]
+    payment_method: str
+    delivery_time: str = None

@@ -1,136 +1,162 @@
-"use client";
+"use client"
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import styles from './AdminOverview.module.css'; // Import your CSS module
 import { useRouter } from 'next/navigation';
+import styles from './AdminOverview.module.css';
+import { FaArrowLeft } from 'react-icons/fa'; 
 
 const AdminOverview = () => {
-    const [restaurants, setRestaurants] = useState([]);
-    const [menus, setMenus] = useState([]);
-    const [orders, setOrders] = useState([]);
-    const [customers, setCustomers] = useState([]);
-    const [deliverers, setDeliverers] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const [restaurants, setRestaurants] = useState([]);
+  const [menus, setMenus] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
-    const router = useRouter()
- 
-  
-    const [isAuthorized, setIsAuthorized] = useState(false);
+  useEffect(() => {
+    document.title = "Admin Overview - Admin";
+    const favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.href = '/favicon_foodie.png';
+    document.head.appendChild(favicon);
 
-    useEffect(() => {
-        const checkAuth = () => {
-        const role = localStorage.getItem('role');
-        console.log('Role in component:', role); // Log role for debugging
-        
-        if (role === 'admin') {
-            setIsAuthorized(true);
-        } else {
-            console.log('Role does not match admin, redirecting to /notauthenticated');
-            router.push('/notauthenticated');
-        }
-        setLoading(false); // Always set loading to false at the end
-        };
-
-        checkAuth();
-    }, [router]);
-    
-    if (!isAuthorized) {
-        return null;
-    }
-
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const restaurantResponse = await axios.get('http://localhost:8000/all_restaurants');
-                const menuResponse = await axios.get('http://localhost:8000/all_menus');
-                const orderResponse = await axios.get('http://localhost:8000/all_orders');
-                const customerResponse = await axios.get('http://localhost:8000/all_customers');
-                const delivererResponse = await axios.get('http://localhost:8000/all_deliverers');
-
-                setRestaurants(restaurantResponse.data);
-                setMenus(menuResponse.data);
-                setOrders(orderResponse.data);
-                setCustomers(customerResponse.data);
-                setDeliverers(delivererResponse.data);
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, []);
-
-    const getRestaurantNameById = (id) => {
-        const restaurant = restaurants.find(restaurant => restaurant.id === id);
-        return restaurant ? restaurant.name : "Unknown";
+    const checkAuth = () => {
+      const role = localStorage.getItem('role');
+      if (role === 'admin') {
+        setIsAuthorized(true);
+      } else {
+        router.push('/notauthenticated');
+      }
+      setLoading(false);
     };
 
-    const getCustomerNameById = (id) => {
-        const customer = customers.find(customer => customer.id === id);
-        return customer ? customer.username : "Unknown";
-    };
+    checkAuth();
+  }, [router]);
 
-    const getDelivererNameById = (id) => {
-        const deliverer = deliverers.find(deliverer => deliverer.id === id);
-        return deliverer ? deliverer.username : "Not Assigned";
-    };
+  useEffect(() => {
+    axios.get('http://localhost:8000/all_restaurants')
+      .then(response => setRestaurants(response.data))
+      .catch(error => console.error("There was an error fetching the restaurants!", error));
 
-    if (loading) {
-        return <div>Loading...</div>;
-    }
+    axios.get('http://localhost:8000/all_menus')
+      .then(response => setMenus(response.data))
+      .catch(error => console.error("There was an error fetching the menus!", error));
 
-    return (
-        <div className={styles.adminOverview}>
-            <h1 className={styles.title}>Overview</h1>
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Restaurants</h2>
-                <ul className={styles.list}>
-                    {restaurants.map(restaurant => (
-                        <li key={restaurant.id} className={styles.listItem}>
-                            {restaurant.name}, {restaurant.city}, {restaurant.street}, {restaurant.stars} stars, {restaurant.category}, {restaurant.distance_limit} km
-                        </li>
-                    ))}
-                </ul>
-            </div>
+    axios.get('http://localhost:8000/all_orders')
+      .then(response => setOrders(response.data))
+      .catch(error => console.error("There was an error fetching the orders!", error));
+  }, []);
 
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Menus</h2>
-                <ul className={styles.list}>
-                    {menus.map(menu => (
-                        <li key={menu.id} className={styles.listItem}>
-                            <strong className={styles.listItemTitle}>{menu.name}</strong> - {menu.price} KM
-                            <br />
-                            <em>Restaurant:</em> {getRestaurantNameById(menu.restaurant_id)}
-                            <br />
-                            {menu.description}
-                        </li>
-                    ))}
-                </ul>
-            </div>
+  const handleGoBack = () => {
+    router.back();
+  };
 
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Orders</h2>
-                <ul className={styles.list}>
-                    {orders.map(order => (
-                        <li key={order.id} className={styles.listItem}>
-                            <strong className={styles.listItemTitle}>Order #{order.id}</strong>
-                            <br />
-                            <em>Restaurant:</em> {getRestaurantNameById(order.restaurant_id)}
-                            <br />
-                            <em>Customer:</em> {getCustomerNameById(order.customer_id)}
-                            <br />
-                            <em>Deliverer:</em> {getDelivererNameById(order.deliverer_id)}
-                            <br />
-                            Total Price: {order.total_price} USD
-                        </li>
-                    ))}
-                </ul>
-            </div>
+  if (!isAuthorized) {
+    return null;
+  }
+
+  return (
+    <div className={styles.adminOverview}>
+      <button onClick={handleGoBack} className={styles.backButton}>
+        <FaArrowLeft size={20}/>
+      </button>
+
+      <section>
+        <h1 className={styles.heading}>Restaurants</h1>
+        <div className={styles['table-container']}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>City</th>
+                <th>Stars</th>
+                <th>Category</th>
+                <th>Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {restaurants.map(restaurant => (
+                <tr key={restaurant.id}>
+                  <td>{restaurant.name}</td>
+                  <td>{restaurant.city}</td>
+                  <td>{restaurant.stars}</td>
+                  <td>{restaurant.category}</td>
+                  <td>{restaurant.is_active ? "Yes" : "No"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-    );
-};
+      </section>
+
+      <section>
+        <h1 className={styles.heading}>Menus</h1>
+        <div className={styles['table-container']}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Restaurant</th>
+                <th>Food Item</th>
+                <th>Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {menus.map(menu => (
+                <tr key={menu.id}>
+                  <td>{menu.restaurant.name}</td>
+                  <td>{menu.food_item.name}</td>
+                  <td>{menu.is_active ? "Yes" : "No"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+      <h1 className={styles.heading}>Orders</h1>
+        <div className={styles['table-container']}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Restaurant</th>
+                <th>Deliverer</th>
+                <th>Total Price</th>
+                <th>Quantity</th>
+                <th>Status</th>
+                <th>Delivery Time</th>
+                <th>Payment Method</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map(order => (
+                <tr key={order.id}>
+                  <td data-label="Customer">{order.customer}</td>
+                  <td data-label="Restaurant">{order.restaurant}</td>
+                  <td data-label="Deliverer">{order.deliverer}</td>
+                  <td data-label="Total Price">{order.total_price}</td>
+                  <td data-label="Quantity">{order.quantity}</td>
+                  <td data-label="Status">{order.status}</td>
+                  <td data-label="Delivery Time">{order.delivery_time ? new Date(order.delivery_time).toLocaleString() : 'N/A'}</td>
+                  <td data-label="Payment Method">{order.payment_method}</td>
+                  <td data-label="Created At">{new Date(order.created_at).toLocaleString()}</td>
+                  <td>
+                    {order.food_items.map((item, index) => (
+                      <div key={index}>
+                        {item.name} - {item.quantity}
+                      </div>
+                    ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 export default AdminOverview;

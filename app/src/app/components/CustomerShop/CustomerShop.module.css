@@ -1,0 +1,295 @@
+.searchBar {
+    width: 100%;
+    max-width: 300px;
+    padding: 10px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    outline: none;
+    transition: box-shadow 0.3s ease;
+    margin-left: 20px;
+}
+
+.searchBar:focus {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-color: #007bff;
+}
+
+.noResults {
+    text-align: center;
+    font-size: 18px;
+    color: #777;
+    margin-top: 20px;
+}
+
+.popularBadge {
+    color: #ffd700;
+    font-size: 20px;
+    margin-left: 10px;
+}
+
+.cartIcon {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    z-index: 1000;
+}
+
+.foodItemsContainer {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #f8f8f8;
+  }
+  
+  .restaurantSection {
+    margin-bottom: 30px;
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .restaurantTitle {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 32px;
+    color: #007bff;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+  }
+  
+  .foodTypeSection {
+    margin-bottom: 30px;
+  }
+  
+  .foodTypeHeader {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #333;
+    border-left: 5px solid #007bff;
+    padding-left: 10px;
+  }
+  
+  .foodItemsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+  }
+  
+  .foodItemCard {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-align: center;
+  }
+  
+  .foodItemCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  .foodItemName {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #007bff;
+  }
+  
+  .foodItemImage {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  
+  .foodItemDescription {
+    font-size: 14px;
+    color: #777;
+    margin-bottom: 10px;
+  }
+  
+  .foodItemPrice,
+  .foodItemDiscount {
+    font-size: 16px;
+    margin-bottom: 5px;
+  }
+  
+  .foodItemDiscount {
+    color: #dc3545;
+    font-weight: bold;
+  }
+  
+  .discountPeriod {
+    font-size: 12px;
+    color: #555;
+  }
+  
+  .error {
+    color: red;
+    text-align: center;
+    font-size: 18px;
+    margin-top: 20px;
+  }
+  
+  .cartIconWrapper {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    z-index: 1000;
+}
+
+.cartIcon {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+
+}
+
+.cartCount {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 1000;
+}
+
+.cartDropdown {
+    position: fixed;
+    right: 10px;
+    top: 60px;
+    width: 300px;
+    max-height: 500px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    z-index: 1000;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.cartItem {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.cartItem h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.cartItem p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.removeButton {
+    align-self: flex-end;
+    background-color: #ff4d4f;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.removeButton:hover {
+    background-color: #ff7875;
+}
+
+.clearButton {
+    display: block;
+    width: 100%;
+    background-color: #ffa940;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    margin-top: 15px;
+}
+
+.clearButton:hover {
+    background-color: #ffbb96;
+}
+
+.submitOrderButton {
+    display: block;
+    width: 100%;
+    background-color: #52c41a;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    margin-top: 15px;
+}
+
+.submitOrderButton:hover {
+    background-color: #73d13d;
+}
+
+.deliveryTimeInput {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #333;
+}
+
+.paymentSelect {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #333;
+}
+
+.backButton {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  padding: 5px 5px;
+  background-color: darkgray;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 17px;
+}
+
+
+.backButton:hover {
+  background-color: gray;
+}

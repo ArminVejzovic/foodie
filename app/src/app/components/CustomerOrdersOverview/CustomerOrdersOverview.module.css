@@ -1,0 +1,79 @@
+.ordersContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    background-color: #f4f4f4;
+    border-radius: 8px;
+  }
+  
+  .orderCard {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .orderCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+  
+  
+  .foodItems {
+    margin-top: 15px;
+  }
+  
+  .foodItems h4 {
+    margin-bottom: 10px;
+    color: #333;
+    font-weight: bold;
+  }
+  
+  .foodItems ul {
+    list-style-type: none;
+    padding-left: 0;
+  }
+  
+  .foodItems li {
+    background-color: #f9f9f9;
+    border-left: 4px solid #007bff;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .foodItems li:hover {
+    background-color: #e2e6ea;
+  }
+  
+  .backButton {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    padding: 5px 5px;
+    background-color: darkgray;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  
+  
+  .backButton:hover {
+    background-color: gray;
+  }
+  
+  
+  @media (max-width: 768px) {
+    .ordersContainer {
+      padding: 10px;
+    }
+  
+    .orderCard {
+      padding: 15px;
+    }
+  }
+  

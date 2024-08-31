@@ -3,11 +3,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import axios from "../../../utils/axios";
+import styles from './Login.module.css';
 
 export default function Login({ onRegisterClick }) {
   const [loginError, setLoginError] = useState(false);
-  const [username, setUsername] = useState(""); // Define username state
-  const [password, setPassword] = useState(""); // Define password state
   const router = useRouter();
 
   const {
@@ -17,11 +16,16 @@ export default function Login({ onRegisterClick }) {
   } = useForm();
 
   useEffect(() => {
+    document.title = "Login - Foodie";
+    const favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.href = '/favicon_foodie.png';
+    document.head.appendChild(favicon);
+    
     const token = localStorage.getItem("token");
-    const storedUsername = localStorage.getItem("username"); // Get stored username
+    const storedUsername = localStorage.getItem("username");
 
     if (token && storedUsername) {
-      // Ako postoji token i username, pokušaj dohvatiti ulogu i preusmjeri na odgovarajući dashboard
       validateTokenAndRedirect(token, storedUsername);
     }
   }, []);
@@ -38,18 +42,15 @@ export default function Login({ onRegisterClick }) {
 
   const validateTokenAndRedirect = async (token, storedUsername) => {
     try {
-      // Provjera validnosti tokena
       const response = await axios.get("http://localhost:8000/validate-token", {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      // Ako je token validan, dohvatiti ulogu i preusmjeriti korisnika
       if (response.data.valid) {
         checkUserRoleAndRedirect(token, storedUsername);
       } else {
-        // Ako token nije validan, obrisati podatke iz localStorage
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("role");
@@ -69,22 +70,21 @@ export default function Login({ onRegisterClick }) {
           'Authorization': `Bearer ${token}`
         }
       });
-      const role = roleResponse.data.role.toLowerCase(); // Ensure role is in lowercase
-      console.log('Logged in as:', role); // Dodaj log za rolu
+      const role = roleResponse.data.role.toLowerCase();
+      console.log('Logged in as:', role);
 
-      localStorage.setItem("role", role); // Spremi rolu u localStorage
+      localStorage.setItem("role", role);
 
       router.push(`/home-${role}`);
     } catch (error) {
       console.error("Error checking role:", error);
-      // U slučaju greške, ne brišemo token
     }
   };
 
   const onSubmit = async (data) => {
     const formData = new URLSearchParams();
-    formData.append('username', username); // Use state variable
-    formData.append('password', password); // Use state variable
+    formData.append('username', data.username);
+    formData.append('password', data.password);
 
     try {
       const response = await axios.post("http://localhost:8000/token", formData, {
@@ -94,17 +94,17 @@ export default function Login({ onRegisterClick }) {
       });
       const token = response.data.access_token;
       localStorage.setItem("token", token);
-      localStorage.setItem("username", username); // Save username to localStorage
+      localStorage.setItem("username", data.username);
 
-      const roleResponse = await axios.get(`http://localhost:8000/get-role/${username}`, {
+      const roleResponse = await axios.get(`http://localhost:8000/get-role/${data.username}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      const role = roleResponse.data.role.toLowerCase(); // Ensure role is in lowercase
-      console.log('Logged in as:', role); // Dodaj log za rolu
+      const role = roleResponse.data.role.toLowerCase();
+      console.log('Logged in as:', role);
 
-      localStorage.setItem("role", role); // Spremi rolu u localStorage
+      localStorage.setItem("role", role);
 
       router.push(`/home-${role}`);
     } catch (error) {
@@ -117,17 +117,30 @@ export default function Login({ onRegisterClick }) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div>
-        <label>Username:</label>
-        <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
-      </div>
-      <div>
-        <label>Password:</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      </div>
-      <button type="submit">Login</button>
-      {loginError && <p>Pogresan username/password!</p>}
-    </form>
+    <div className={styles.container}>
+      <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+        <h1 className={styles.title}>Login</h1>
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Username:</label>
+          <input
+            type="text"
+            className={styles.input}
+            {...register('username', { required: "Username is required" })}
+          />
+          {errors.username && <p className={styles.error}>{errors.username.message}</p>}
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Password:</label>
+          <input
+            type="password"
+            className={styles.input}
+            {...register('password', { required: "Password is required" })}
+          />
+          {errors.password && <p className={styles.error}>{errors.password.message}</p>}
+        </div>
+        <button type="submit" className={styles.button}>Login</button>
+        {loginError && <p className={styles.error}>Pogrešan username/password!</p>}
+      </form>
+    </div>
   );
 }
