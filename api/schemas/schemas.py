@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
 
@@ -130,3 +130,4 @@ class OrderCreate(BaseModel):
     cart: list[OrderItemCreate]
     payment_method: str
     delivery_time: str = None
+

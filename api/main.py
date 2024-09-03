@@ -1,9 +1,15 @@
 import base64
+from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import math
 import smtplib
-from fastapi import FastAPI, Depends, Form, HTTPException, status
+from email import encoders
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from io import BytesIO
+from fastapi import FastAPI, Depends, Form, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 import pytz
@@ -22,7 +28,8 @@ from models.models import Admin, Customer, Deliverer, FoodItem, FoodType, Menu, 
 from autentikacija.autentikacija import ALGORITHM, SECRET_KEY, create_access_token, get_current_user, get_user_by_username, oauth2_scheme
 from schemas.schemas import AdminCreate, ApplyDeliverer, ApplyPartner, ApproveOrderRequest, AssignOrderRequest, DelivererCreate, DelivererResponse, FoodItemCreate, FoodItemUpdate, FoodTypeCreate, OrderCreate, OrderResponse, RestaurantAdminCreate, RestaurantCreate, RestaurantTypeCreate, RestaurantUpdate, StatusUpdate, Token, CustomerCreate
 from database.database import get_db, engine
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, aliased
+from apscheduler.schedulers.background import BackgroundScheduler
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -705,11 +712,14 @@ def get_free_deliverers(username: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Restaurant Admin not found")
 
     free_deliverers = db.query(Deliverer).filter(
-        Deliverer.restaurant_id == restaurant_admin.restaurant_id,
-        or_(Deliverer.orders == None, Deliverer.orders.any(Order.status != 'assigned'))
-    ).all()
-    
-    return [DelivererResponse(id=deliverer.id, username=deliverer.username) for deliverer in free_deliverers]
+        Deliverer.restaurant_id == restaurant_admin.restaurant_id
+    ).options(joinedload(Deliverer.orders)).all()
+    result = []
+    for deliverer in free_deliverers:
+        if not deliverer.orders or all(order.status == 'delivered' for order in deliverer.orders):
+            result.append(DelivererResponse(id=deliverer.id, username=deliverer.username))
+
+    return result
 
 @app.put("/restaurant_admin/{restaurant_id}/update")
 def update_restaurant_by_admin(
@@ -1023,6 +1033,7 @@ def create_order(username: str, order: OrderCreate, db: Session = Depends(get_db
     
     db.commit()
     
+
     send_order_confirmation_email(customer.email, [order_instance.id], db)
     
     return {"detail": "Order placed successfully", "order_id": order_instance.id}
@@ -1063,3 +1074,211 @@ def get_orders_for_customer(username: str, db: Session = Depends(get_db)):
         orders_details.append(order_details)
 
     return orders_details
+
+# Extra features
+
+@app.get("/deliverers/{username}")
+def get_deliverers_by_admin(username: str, db: Session = Depends(get_db)):
+    try:
+        admin = db.query(RestaurantAdmin).filter(RestaurantAdmin.username == username).first()
+        if not admin:
+            raise HTTPException(status_code=404, detail="Restaurant admin not found")
+
+        deliverers = db.query(Deliverer).filter(Deliverer.restaurant_id == admin.restaurant_id).all()
+        return deliverers
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching deliverers: {str(e)}")
+
+@app.get("/map/orders")
+def get_orders_by_date(
+    selected_date: date, 
+    deliverer_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    try:
+        query = db.query(Order).join(Customer).filter(func.date(Order.delivery_time) == selected_date)
+        
+        if deliverer_id:
+            query = query.filter(Order.deliverer_id == int(deliverer_id))
+
+        orders = query.all()
+        
+        return [
+            {
+                "id": order.id,
+                "customer_id": order.customer_id,
+                "restaurant_id": order.restaurant_id,
+                "deliverer_id": order.deliverer_id,
+                "created_at": order.created_at.date(),
+                "delivery_time": order.delivery_time.date(),
+                "status": order.status,
+                "total_price": order.total_price,
+                "customer_latitude": order.customer.latitude,
+                "customer_longitude": order.customer.longitude,
+            } for order in orders
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Restaurant Admins reports
+
+def generate_restaurant_report(restaurant_id: int, db: Session):
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    
+    restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
+    restaurant_name = restaurant.name if restaurant else "Unknown Restaurant"
+    pdf.setTitle(f"Report for {restaurant_name}")
+
+    start_of_month = datetime.now().replace(day=1)
+    end_of_month = (start_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+    orders = db.query(Order).filter(Order.restaurant_id == restaurant_id,
+                                    Order.created_at >= start_of_month,
+                                    Order.created_at <= end_of_month).all()
+
+    daily_order_counts = {}
+    for order in orders:
+        order_day = order.created_at.strftime("%Y-%m-%d")
+        daily_order_counts[order_day] = daily_order_counts.get(order_day, 0) + 1
+
+    pdf.drawString(100, 750, f"Daily Orders Report for {start_of_month.strftime('%B %Y')}")
+    y = 730
+    for day, count in daily_order_counts.items():
+        pdf.drawString(100, y, f"{day}: {count} orders")
+        y -= 20
+
+    pdf.drawString(100, y - 20, f"Total orders for the month: {len(orders)}")
+
+    y -= 60
+    pdf.drawString(100, y, "Deliverer Performance:")
+    y -= 20
+    
+    deliverer_performance = {}
+    deliverers = db.query(Deliverer).filter(Deliverer.id.in_([order.deliverer_id for order in orders if order.deliverer_id])).all()
+    deliverer_usernames = {deliverer.id: deliverer.username for deliverer in deliverers}
+
+    for order in orders:
+        if order.deliverer_id:
+            deliverer_performance[order.deliverer_id] = deliverer_performance.get(order.deliverer_id, 0) + 1
+
+    for deliverer_id, count in deliverer_performance.items():
+        username = deliverer_usernames.get(deliverer_id, "Unknown Deliverer")
+        pdf.drawString(100, y, f"Deliverer {username}: {count} deliveries")
+        y -= 20
+
+    pdf.save()
+    buffer.seek(0)
+    return buffer
+
+def send_email(to_email, subject, body, attachment_io):
+    msg = MIMEMultipart()
+    msg['From'] = SMTP_USER
+    msg['To'] = to_email
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    part = MIMEApplication(attachment_io.read(), Name='report.pdf')
+    part['Content-Disposition'] = f'attachment; filename="report.pdf"'
+    msg.attach(part)
+
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_USER, to_email, msg.as_string())
+    except smtplib.SMTPRecipientsRefused as e:
+        print(f"Failed to send email to {to_email}: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+def send_monthly_reports():
+    db: Session = Depends(get_db)
+    restaurants = db.query(Restaurant).all()
+    
+    for restaurant in restaurants:
+        restaurant_admins = db.query(RestaurantAdmin).filter(RestaurantAdmin.restaurant_id == restaurant.id).all()
+        pdf_report = generate_restaurant_report(restaurant.id, db)
+        
+        for admin in restaurant_admins:
+            pdf_report.seek(0)
+            send_email(admin.email, f"Monthly Report for {restaurant.name}", "Attached is your monthly report from Foodie.", pdf_report)
+    
+    db.close()
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(send_monthly_reports, 'cron', day=1, hour=8, minute=0)
+scheduler.start()
+
+@app.post("/send-test-report")
+def send_test_report(db: Session = Depends(get_db)):
+    restaurant_id = 1
+    restaurant_admins = db.query(RestaurantAdmin).filter(RestaurantAdmin.restaurant_id == restaurant_id).all()
+    
+    pdf_report = generate_restaurant_report(restaurant_id, db)
+    
+    for admin in restaurant_admins:
+        pdf_report.seek(0)
+        send_email(admin.email, f"Test Report for Restaurant ID {restaurant_id}", "This is a test report from Foodie.", pdf_report)
+    
+    return {"message": "Test report sent successfully"}
+
+# Admin reports
+
+def generate_admin_report(db: Session):
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    
+    pdf.setTitle("Admin Report")
+
+    restaurants = db.query(Restaurant).all()
+
+    pdf.drawString(100, 750, "Restaurant Performance Report")
+    y = 730
+
+    for restaurant in restaurants:
+        restaurant_name = restaurant.name
+        pdf.drawString(100, y, f"Restaurant: {restaurant_name}")
+        y -= 20
+
+        orders = db.query(Order).filter(Order.restaurant_id == restaurant.id).all()
+        total_orders = len(orders)
+        total_profit = sum(order.total_price for order in orders)
+
+        pdf.drawString(100, y, f"Total Orders: {total_orders}")
+        y -= 20
+        pdf.drawString(100, y, f"Total Profit: ${total_profit:.2f}")
+        y -= 40
+
+    pdf.save()
+    buffer.seek(0)
+    return buffer
+
+def send_admin_reports():
+    db: Session = Depends(get_db)
+    admins = db.query(Admin).all()
+    
+    pdf_report = generate_admin_report(db)
+
+    for admin in admins:
+        pdf_report.seek(0)
+        send_email(admin.email, "Monthly Report for Admins", "Attached is the monthly report from Foodie.", pdf_report)
+    
+    db.close()
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(send_admin_reports, 'cron', day=1, hour=8, minute=0)
+scheduler.start()
+
+@app.post("/send-test-admin-report")
+def send_test_admin_report(db: Session = Depends(get_db)):
+    pdf_report = generate_admin_report(db)
+    
+    admins = db.query(Admin).all()
+    for admin in admins:
+        pdf_report.seek(0)
+        send_email(admin.email, "Test Admin Report", "This is a test report from Foodie.", pdf_report)
+    
+    return {"message": "Test report sent successfully"}

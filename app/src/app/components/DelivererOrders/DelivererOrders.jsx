@@ -71,6 +71,7 @@ const DelivererOrders = () => {
   };
 
   if (loading) return <div>Loading...</div>;
+  if(!isAuthorized) return null;
 
   return (
     <div className={styles.container}>

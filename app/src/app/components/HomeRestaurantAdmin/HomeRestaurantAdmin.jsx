@@ -75,6 +75,12 @@ const HomeRestaurantAdmin = () => {
           </div>
           <span className={styles.cardLink}>Update Restaurant</span>
         </Link>
+        <Link href="/restaurant-admin/orders-map" className={styles.card}>
+          <div className={styles.icon}>
+            📍🗺️
+          </div>
+          <span className={styles.cardLink}>View Orders on Map</span>
+        </Link>
 
       </div>
     </div>

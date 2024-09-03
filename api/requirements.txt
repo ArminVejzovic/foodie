@@ -6,3 +6,5 @@ python-dotenv
 pydantic 
 bcrypt 
 python-jose
+reportlab
+apscheduler

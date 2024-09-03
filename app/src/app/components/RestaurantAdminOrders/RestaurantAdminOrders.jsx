@@ -45,9 +45,9 @@ const RestaurantAdminOrders = () => {
 
     const intervalId = setInterval(() => {
       fetchOrdersAndDeliverers();
-    }, 5000); // Fetch data every 5 seconds
+    }, 5000);
 
-    return () => clearInterval(intervalId); // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   const fetchOrders = async () => {
