@@ -6,6 +6,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaf
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import styles from "./Register.module.css";
+import Link from "next/link";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -39,6 +40,7 @@ export default function Register() {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     document.title = "Register - Foodie";
@@ -103,7 +105,21 @@ export default function Register() {
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>Password:</label>
-          <input type="password" className={styles.input} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <div className={styles.passwordWrapper}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              className={styles.input}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              className={styles.toggleButton}
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>First Name:</label>
@@ -127,6 +143,9 @@ export default function Register() {
         </div>
         <button type="submit" className={styles.submitButton}>Register</button>
       </form>
+      <p className={styles.accountText}>
+        Already have an account? <Link href="/login" className={styles.loginLink}>Login</Link>
+      </p>
     </div>
   );
 }

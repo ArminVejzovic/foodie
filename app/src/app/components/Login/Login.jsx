@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import axios from "../../../utils/axios";
 import styles from './Login.module.css';
+import Link from "next/link";
 
 export default function Login({ onRegisterClick }) {
   const [loginError, setLoginError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const {
@@ -131,16 +133,31 @@ export default function Login({ onRegisterClick }) {
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>Password:</label>
-          <input
-            type="password"
-            className={styles.input}
-            {...register('password', { required: "Password is required" })}
-          />
+          <div className={styles.passwordContainer}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              className={styles.input}
+              {...register('password', { required: "Password is required" })}
+            />
+            <button
+              type="button"
+              className={styles.toggleButton}
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
           {errors.password && <p className={styles.error}>{errors.password.message}</p>}
         </div>
         <button type="submit" className={styles.button}>Login</button>
         {loginError && <p className={styles.error}>Pogrešan username/password!</p>}
       </form>
+      <p className={styles.accountText}>
+        Don't have an account? <Link href="/register" className={styles.registerLink}>Register</Link>
+      </p>
+      <p className={styles.accountText}>
+         <Link href="/forgot-password" className={styles.registerLink}>Forgot password?</Link>
+      </p>
     </div>
   );
 }

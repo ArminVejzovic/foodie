@@ -4,8 +4,10 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import math
+import random
 import smtplib
 from email import encoders
+import string
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from io import BytesIO
@@ -26,10 +28,11 @@ from models import models
 from autentikacija.middleware import admin_required, restaurant_admin_required
 from models.models import Admin, Customer, Deliverer, FoodItem, FoodType, Menu, MenuFoodItem, Order, OrderFoodItem, Restaurant, RestaurantAdmin, RestaurantType
 from autentikacija.autentikacija import ALGORITHM, SECRET_KEY, create_access_token, get_current_user, get_user_by_username, oauth2_scheme
-from schemas.schemas import AdminCreate, ApplyDeliverer, ApplyPartner, ApproveOrderRequest, AssignOrderRequest, DelivererCreate, DelivererResponse, FoodItemCreate, FoodItemUpdate, FoodTypeCreate, OrderCreate, OrderResponse, RestaurantAdminCreate, RestaurantCreate, RestaurantTypeCreate, RestaurantUpdate, StatusUpdate, Token, CustomerCreate
+from schemas.schemas import AdminCreate, ApplyDeliverer, ApplyPartner, ApproveOrderRequest, AssignOrderRequest, DelivererCreate, DelivererResponse, FoodItemCreate, FoodItemUpdate, FoodTypeCreate, OrderCreate, OrderResponse, RequestPasswordResetSchema, ResetPasswordSchema, RestaurantAdminCreate, RestaurantCreate, RestaurantTypeCreate, RestaurantUpdate, StatusUpdate, Token, CustomerCreate, VerifyResetCodeSchema
 from database.database import get_db, engine
 from sqlalchemy.orm import joinedload, aliased
 from apscheduler.schedulers.background import BackgroundScheduler
+import openai
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -1282,3 +1285,86 @@ def send_test_admin_report(db: Session = Depends(get_db)):
         send_email(admin.email, "Test Admin Report", "This is a test report from Foodie.", pdf_report)
     
     return {"message": "Test report sent successfully"}
+
+# Forgot password
+
+JWT_SECRET_KEY = "your_jwt_secret_key"
+JWT_EXPIRATION_SECONDS = 600
+
+def generate_reset_token(username: str, email: str, role: str) -> str:
+    payload = {
+        "username": username,
+        "email": email,
+        "role": role,
+        "exp": datetime.utcnow() + timedelta(seconds=JWT_EXPIRATION_SECONDS)
+    }
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
+
+def send_reset_email(to_email: str, reset_token: str, username: str):
+    subject = "Password Reset Request"
+    body = f"Hi {username},\n\nYour password reset token is: {reset_token}\n\nIf you did not request a password reset, please ignore this email.\n\nBest regards,\nFoodie Restaurants Team"
+
+    msg = MIMEMultipart()
+    msg['From'] = SMTP_USER
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+            print(f"Reset token email sent to {to_email}")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+def find_user_by_role(db: Session, username: str, email: str, role: str):
+    if role == "admin":
+        return db.query(models.Admin).filter(models.Admin.username == username, models.Admin.email == email).first()
+    elif role == "restaurantadmin":
+        return db.query(models.RestaurantAdmin).filter(models.RestaurantAdmin.username == username, models.RestaurantAdmin.email == email).first()
+    elif role == "deliverer":
+        return db.query(models.Deliverer).filter(models.Deliverer.username == username, models.Deliverer.email == email).first()
+    elif role == "customer":
+        return db.query(models.Customer).filter(models.Customer.username == username, models.Customer.email == email).first()
+    return None
+
+@app.post("/request-password-reset")
+async def request_password_reset(data: RequestPasswordResetSchema, db: Session = Depends(get_db)):
+    user = find_user_by_role(db, data.username, data.email, data.role)
+    if not user:
+        raise HTTPException(status_code=404, detail="User with this username, email, and role not found")
+
+    reset_token = generate_reset_token(data.username, data.email, data.role)
+    send_reset_email(data.email, reset_token, data.username)
+
+    return {"message": "Reset token sent to your email"}
+
+@app.post("/verify-reset-token")
+async def verify_reset_token(token: str = Query(...)):
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
+        return {"message": "Reset token verified", "username": payload["username"], "email": payload["email"], "role": payload["role"]}
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid reset token")
+
+@app.post("/reset-password")
+async def reset_password(data: ResetPasswordSchema, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(data.token, JWT_SECRET_KEY, algorithms=["HS256"])
+        user = find_user_by_role(db, data.username, data.email, data.role)
+        if not user:
+            raise HTTPException(status_code=404, detail=f"User not found with username: {data.username}, email: {data.email}, role: {data.role}")
+
+        hashed_password = get_password_hash(data.new_password)
+        user.password = hashed_password
+        db.commit()
+
+        return {"message": "Password reset successful"}
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

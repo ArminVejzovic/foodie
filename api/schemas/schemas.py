@@ -131,3 +131,21 @@ class OrderCreate(BaseModel):
     payment_method: str
     delivery_time: str = None
 
+class RequestPasswordResetSchema(BaseModel):
+    username: str
+    email: EmailStr
+    role: str
+
+class VerifyResetCodeSchema(BaseModel):
+    username: str
+    email: EmailStr
+    role: str
+    reset_code: str
+
+class ResetPasswordSchema(BaseModel):
+    token: str
+    new_password: str
+    username: str
+    email: str
+    role: str
+

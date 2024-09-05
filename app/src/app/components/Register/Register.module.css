@@ -18,6 +18,26 @@
     text-align: center;
     text-decoration: underline;
   }
+
+  .passwordWrapper {
+    display: flex;
+    align-items: center;
+  }
+  
+  .input {
+    flex: 1;
+    padding-right: 10px;
+  }
+  
+  .toggleButton {
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    margin-left: -40px;
+    padding: 0 10px;
+    height: 100%;
+  }
   
   .mapContainer {
     margin-bottom: 20px;
@@ -75,5 +95,24 @@
     color: red;
     font-size: 14px;
     margin-top: 10px;
+  }
+
+  .accountText {
+    font-size: 14px;
+    color: #333;
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  .loginLink {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+    margin-left: 5px;
+  }
+  
+  .loginLink:hover {
+    text-decoration: underline;
+    color: #0056b3;
   }
   
