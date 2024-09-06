@@ -149,3 +149,9 @@ class ResetPasswordSchema(BaseModel):
     email: str
     role: str
 
+class RatingCreate(BaseModel):
+    rating: int
+    comment: Optional[str]
+
+    class Config:
+        orm_mode = True

@@ -24,8 +24,8 @@ class Restaurant(Base):
     deliverers = relationship("Deliverer", back_populates="restaurant")
     restaurant_admins = relationship("RestaurantAdmin", back_populates="restaurant")
     food_items = relationship("FoodItem", back_populates="restaurant")
-    #ratings = relationship("Rating", back_populates="restaurant")
-    #notifications = relationship("Notification", back_populates="restaurant")
+    ratings = relationship("Rating", back_populates="restaurant")
+    notifications = relationship("Notification", back_populates="restaurant")
 
 class Admin(Base):
     __tablename__ = 'admins'
@@ -46,8 +46,7 @@ class RestaurantAdmin(Base):
     password = Column(String, nullable=False)
     role = Column(String, default="restaurantadmin")
     restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
-    
-    #notifications = relationship("Notification", back_populates="restaurant_admin")
+
     #chat_messages = relationship("ChatMessage", back_populates="restaurant_admin")
     restaurant = relationship("Restaurant", back_populates="restaurant_admins")
 
@@ -78,8 +77,7 @@ class Customer(Base):
 
     orders = relationship("Order", back_populates="customer")
     #chat_messages = relationship("ChatMessage", back_populates="sender")
-    #ratings = relationship("Rating", back_populates="customer")
-    #notifications = relationship("Notification", back_populates="customer")
+    ratings = relationship("Rating", back_populates="customer")
 
 class Menu(Base):
     __tablename__ = 'menus'
@@ -110,6 +108,8 @@ class Order(Base):
     deliverer = relationship("Deliverer", back_populates="orders")
 
     food_items = relationship("OrderFoodItem", back_populates="order")
+    notifications = relationship("Notification", back_populates="order")
+    ratings = relationship("Rating", back_populates="order")
 
 class OrderFoodItem(Base):
     __tablename__ = 'order_fooditem'
@@ -156,7 +156,6 @@ class MenuFoodItem(Base):
     menu_id = Column(Integer, ForeignKey('menus.id'), primary_key=True)
     fooditem_id = Column(Integer, ForeignKey('food_items.id'), primary_key=True)
 
-## Dodatni zahtjevi ##
 """
 class ChatMessage(Base):
     __tablename__ = 'chat_messages'
@@ -172,35 +171,29 @@ class ChatMessage(Base):
     receiver = relationship("Admin", back_populates="chat_messages")
     restaurant_admin = relationship("RestaurantAdmin", back_populates="chat_messages")
     deliverer = relationship("Deliverer", back_populates="chat_messages")
-
+"""
 
 class Notification(Base):
     __tablename__ = 'notifications'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    restaurant_admin_id = Column(Integer, ForeignKey('restaurant_admins.id'))
-    restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
-    customer_id = Column(Integer, ForeignKey('customers.id'))
-    deliverer_id = Column(Integer, ForeignKey('deliverers.id'))
-    message = Column(Text, nullable=False)
-    role = Column(String, nullable=False)
+    restaurant_id = Column(Integer, ForeignKey('restaurants.id'), nullable=False)
+    order_id = Column(Integer, ForeignKey('orders.id'), nullable=False)
+    #is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    restaurant_admin = relationship("RestaurantAdmin", back_populates="notifications")
     restaurant = relationship("Restaurant", back_populates="notifications")
-    customer = relationship("Customer", back_populates="notifications")
-    deliverer = relationship("Deliverer", back_populates="notifications")
-
+    order = relationship("Order", back_populates="notifications")
 
 class Rating(Base):
     __tablename__ = 'ratings'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     customer_id = Column(Integer, ForeignKey('customers.id'))
     restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
+    order_id = Column(Integer, ForeignKey('orders.id'))
     rating = Column(Integer, nullable=False)
     comment = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     customer = relationship("Customer", back_populates="ratings")
     restaurant = relationship("Restaurant", back_populates="ratings")
-
-"""
+    order = relationship("Order", back_populates="ratings")

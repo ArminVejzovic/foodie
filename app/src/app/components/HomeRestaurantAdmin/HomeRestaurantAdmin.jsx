@@ -4,6 +4,7 @@ import Logout from '../Logout/Logout.jsx';
 import Link from 'next/link.js';
 import { useRouter } from 'next/navigation';
 import styles from './HomeRestaurantAdmin.module.css';
+import Notifications from '../../components/RestaurantAdminNotifications/RestaurantAdminNotifications.jsx';
 
 const HomeRestaurantAdmin = () => {
   const router = useRouter();
@@ -43,6 +44,9 @@ const HomeRestaurantAdmin = () => {
   return (
     <div className={styles.container}>
      <header className={styles.header}>
+        <div className={styles.notifications}>
+          <Notifications />
+        </div>
         <Logout className={styles.logout} />
         <h3 className={styles.title}>Restaurant Admin Dashboard</h3>
         <div className={styles.scrollIndicator}>⬇️</div>
@@ -80,6 +84,12 @@ const HomeRestaurantAdmin = () => {
             📍🗺️
           </div>
           <span className={styles.cardLink}>View Orders on Map</span>
+        </Link>
+        <Link href="/restaurant-admin/ratings" className={styles.card}>
+          <div className={styles.icon}>
+            ⭐
+          </div>
+          <span className={styles.cardLink}>Ratings</span>
         </Link>
 
       </div>

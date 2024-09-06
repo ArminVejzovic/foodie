@@ -1,0 +1,79 @@
+.reviewWrapper {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .starIcon {
+    cursor: pointer;
+    font-size: 24px;
+    color: #333;
+    transition: color 0.3s;
+    padding: 5px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+  }
+  
+  .starIcon:hover {
+    color: #ffcc00;
+    background-color: #e0e0e0;
+  }
+  
+  .reviewBar {
+    position: absolute;
+    top: 35px;
+    right: 0;
+    width: 320px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 12px
+  }
+  
+  .rating {
+    padding: 10px;
+  }
+  
+  .star {
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.3s;
+  }
+  
+  .star.selected {
+    color: #ffcc00;
+  }
+  
+  .textarea {
+    width: 90%;
+    padding: 8px;
+    margin: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .submitButton {
+    background-color: #ffcc00;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .submitButton:hover {
+    background-color: #555;
+  }
+  
+  @media (max-width: 580px) {
+    .reviewBar {
+      width: 230px;
+      right: 10px;
+    }
+  }
+  

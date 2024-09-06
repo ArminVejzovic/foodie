@@ -4,6 +4,7 @@ import Logout from '../Logout/Logout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import styles from './HomeCustomer.module.css';
+import ReviewForm from '../ReviewForm/ReviewForm';
 
 const HomeCustomer = () => {
   const router = useRouter();
@@ -42,8 +43,9 @@ const HomeCustomer = () => {
   return (
     <div className={styles.container}>
      <header className={styles.header}>
+        <ReviewForm />
         <Logout className={styles.logout} />
-        <h3 className={styles.title}>Admin Dashboard</h3>
+        <h3 className={styles.title}>Customer Dashboard</h3>
         <div className={styles.scrollIndicator}>⬇️</div>
       </header>
       <div className={styles.cardsContainer}>

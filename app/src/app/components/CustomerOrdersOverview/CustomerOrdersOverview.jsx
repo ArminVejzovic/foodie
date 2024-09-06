@@ -32,7 +32,7 @@ const CustomerOrdersOverview = ({ username }) => {
     const fetchOrders = async () => {
       try {
         const username = localStorage.getItem('username');
-        const response = await axios.get(`http://localhost:8000/orders/${username}`);
+        const response = await axios.get(`http://localhost:8000/customer/orders/${username}`);
         setOrders(response.data);
       } catch (error) {
         console.error('Error fetching orders:', error);

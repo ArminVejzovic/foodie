@@ -26,9 +26,9 @@ from typing import List, Optional
 from utils.hashing import verify_password, get_password_hash
 from models import models
 from autentikacija.middleware import admin_required, restaurant_admin_required
-from models.models import Admin, Customer, Deliverer, FoodItem, FoodType, Menu, MenuFoodItem, Order, OrderFoodItem, Restaurant, RestaurantAdmin, RestaurantType
+from models.models import Admin, Customer, Deliverer, FoodItem, FoodType, Menu, MenuFoodItem, Notification, Order, OrderFoodItem, Rating, Restaurant, RestaurantAdmin, RestaurantType
 from autentikacija.autentikacija import ALGORITHM, SECRET_KEY, create_access_token, get_current_user, get_user_by_username, oauth2_scheme
-from schemas.schemas import AdminCreate, ApplyDeliverer, ApplyPartner, ApproveOrderRequest, AssignOrderRequest, DelivererCreate, DelivererResponse, FoodItemCreate, FoodItemUpdate, FoodTypeCreate, OrderCreate, OrderResponse, RequestPasswordResetSchema, ResetPasswordSchema, RestaurantAdminCreate, RestaurantCreate, RestaurantTypeCreate, RestaurantUpdate, StatusUpdate, Token, CustomerCreate, VerifyResetCodeSchema
+from schemas.schemas import AdminCreate, ApplyDeliverer, ApplyPartner, ApproveOrderRequest, AssignOrderRequest, DelivererCreate, DelivererResponse, FoodItemCreate, FoodItemUpdate, FoodTypeCreate, OrderCreate, OrderResponse, RatingCreate, RequestPasswordResetSchema, ResetPasswordSchema, RestaurantAdminCreate, RestaurantCreate, RestaurantTypeCreate, RestaurantUpdate, StatusUpdate, Token, CustomerCreate, VerifyResetCodeSchema
 from database.database import get_db, engine
 from sqlalchemy.orm import joinedload, aliased
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -1038,25 +1038,32 @@ def create_order(username: str, order: OrderCreate, db: Session = Depends(get_db
     
 
     send_order_confirmation_email(customer.email, [order_instance.id], db)
+
+    new_notification = Notification(
+        restaurant_id=restaurant_id,
+        order_id=order_instance.id,
+    )
+    db.add(new_notification)
+    db.commit()
     
     return {"detail": "Order placed successfully", "order_id": order_instance.id}
 
-@app.get("/orders/{username}")
+@app.get("/customer/orders/{username}")
 def get_orders_for_customer(username: str, db: Session = Depends(get_db)):
-    customer = db.query(models.Customer).filter(models.Customer.username == username).first()
+    customer = db.query(Customer).filter(Customer.username == username).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
 
-    orders = db.query(models.Order).filter(models.Order.customer_id == customer.id).all()
+    orders = db.query(Order).filter(Order.customer_id == customer.id).all()
     
     orders_details = []
     for order in orders:
-        restaurant = db.query(models.Restaurant).filter(models.Restaurant.id == order.restaurant_id).first()
-        order_food_items = db.query(models.OrderFoodItem).filter(models.OrderFoodItem.order_id == order.id).all()
+        restaurant = db.query(Restaurant).filter(Restaurant.id == order.restaurant_id).first()
+        order_food_items = db.query(OrderFoodItem).filter(OrderFoodItem.order_id == order.id).all()
 
         food_items_details = []
         for order_food_item in order_food_items:
-            food_item = db.query(models.FoodItem).filter(models.FoodItem.id == order_food_item.food_item_id).first()
+            food_item = db.query(FoodItem).filter(FoodItem.id == order_food_item.food_item_id).first()
             food_items_details.append({
                 "name": food_item.name,
                 "quantity": order_food_item.quantity,
@@ -1079,6 +1086,18 @@ def get_orders_for_customer(username: str, db: Session = Depends(get_db)):
     return orders_details
 
 # Extra features
+
+@app.get("/notifications/{username}")
+async def get_notifications(username: str, db: Session = Depends(get_db)):
+    restaurant_admin = db.query(RestaurantAdmin).filter(RestaurantAdmin.username == username).first()
+    if not restaurant_admin:
+        raise HTTPException(status_code=404, detail="Restaurant admin not found")
+    
+    notifications = db.query(Notification).filter(
+        Notification.restaurant_id == restaurant_admin.restaurant_id
+    ).order_by(Notification.created_at.desc()).all()
+    
+    return notifications
 
 @app.get("/deliverers/{username}")
 def get_deliverers_by_admin(username: str, db: Session = Depends(get_db)):
@@ -1368,3 +1387,77 @@ async def reset_password(data: ResetPasswordSchema, db: Session = Depends(get_db
         raise HTTPException(status_code=400, detail="Invalid or expired token")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/orders/rateable/{username}")
+def get_rateable_order(username: str, db: Session = Depends(get_db)):
+    customer = db.query(Customer).filter_by(username=username).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found.")
+
+    order = db.query(Order).filter(
+        Order.customer_id == customer.id,
+        Order.status == 'delivered'
+    ).order_by(Order.delivered_time.desc()).first()
+
+    if not order:
+        raise HTTPException(status_code=404, detail="No delivered orders found.")
+
+    if not order.delivered_time:
+        raise HTTPException(status_code=404, detail="Order has not been delivered yet.")
+
+    delivery_deadline = order.delivered_time + timedelta(hours=48)
+    if datetime.utcnow() > delivery_deadline:
+        raise HTTPException(status_code=400, detail="Rating period expired.")
+
+    return order
+
+@app.post("/orders/rating/{username}")
+def rate_order(username: str, rating: RatingCreate, db: Session = Depends(get_db)):
+    customer = db.query(Customer).filter_by(username=username).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found.")
+
+    order = db.query(Order).filter(
+        Order.customer_id == customer.id,
+        Order.status == 'delivered'
+    ).order_by(Order.delivered_time.desc()).first()
+
+    if not order:
+        raise HTTPException(status_code=404, detail="No rateable orders found or order not delivered.")
+
+    existing_rating = db.query(Rating).filter_by(customer_id=customer.id, order_id=order.id).first()
+    if existing_rating:
+        raise HTTPException(status_code=400, detail="Order already rated.")
+
+    delivery_deadline = order.delivered_time + timedelta(hours=48)
+    if datetime.utcnow() > delivery_deadline:
+        raise HTTPException(status_code=400, detail="Rating period expired.")
+
+    new_rating = Rating(
+        customer_id=customer.id,
+        restaurant_id=order.restaurant_id,
+        order_id=order.id,
+        rating=rating.rating,
+        comment=rating.comment,
+        created_at=datetime.utcnow()
+    )
+
+    db.add(new_rating)
+    db.commit()
+    db.refresh(new_rating)
+
+    return new_rating
+
+@app.get("/ratings/{username}")
+def get_ratings_for_admin(username: str, db: Session = Depends(get_db)):
+    admin = db.query(RestaurantAdmin).filter(RestaurantAdmin.username == username).first()
+    
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    ratings = db.query(Rating).filter(Rating.restaurant_id == admin.restaurant_id).order_by(Rating.created_at.desc()).all()
+    
+    if not ratings:
+        raise HTTPException(status_code=404, detail="No ratings found for this restaurant")
+    
+    return ratings

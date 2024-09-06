@@ -50,6 +50,12 @@
   top: 15px;
 }
 
+.notifications {
+  position: absolute;
+  right: 150px;
+  top: 15px;
+}
+
 .cardsContainer {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
