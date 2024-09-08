@@ -54,6 +54,23 @@
     background-color: #005bb5;
   }
   
+  .backButton {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    padding: 5px 5px;
+    background-color: darkgray;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  
+  
+  .backButton:hover {
+    background-color: gray;
+  }
+
   .loading {
     text-align: center;
     font-size: 1.2rem;

@@ -19,7 +19,7 @@ const ReviewForm = () => {
         const response = await axios.get(`http://localhost:8000/orders/rateable/${username}`);
         setOrder(response.data);
       } catch (error) {
-        setErrorMessage("Nema narudžbina za ocjenjivanje.");
+        setErrorMessage("There is no orders for rating now.");
       }
     };
 
@@ -33,17 +33,16 @@ const ReviewForm = () => {
   const submitReview = async (e) => {
     e.preventDefault();
     if (!order) {
-      setErrorMessage("Nema narudžbina za ocjenjivanje.");
+      setErrorMessage("There is no orders for rating now.");
       return;
     }
 
     try {
       await axios.post(`http://localhost:8000/orders/rating/${username}`, { rating, comment });
-      setSuccessMessage("Uspješno ste ocijenili narudžbinu!");
+      setSuccessMessage("You have successfully rated last order.");
       setOrder(null);
-      setIsOpen(false);
     } catch (error) {
-      setErrorMessage(error.response.data.detail || "Došlo je do greške.");
+      setErrorMessage(error.response.data.detail || "An error occurred while submitting the review.");
     }
   };
 

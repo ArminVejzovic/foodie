@@ -6,6 +6,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import styles from './RestaurantUpdate.module.css';
+import { FaArrowLeft } from 'react-icons/fa'; 
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -171,6 +172,10 @@ const RestaurantUpdate = () => {
     setNewLocation(null);
   };
 
+  const handleGoBack = () => {
+    router.back();
+  };
+
   if (loading) return <div className={styles.loading}>Loading...</div>;
   
   if(!isAuthorized) {
@@ -179,6 +184,9 @@ const RestaurantUpdate = () => {
 
   return (
     <div className={styles.container}>
+       <button className={styles.backButton} onClick={handleGoBack}>
+          <FaArrowLeft size={20} />
+      </button>
       <h1 className={styles.title}>{restaurant?.name || 'Update Restaurant'}</h1>
       <p>Pick new location of your restaurant</p>
       <div className={styles.mapContainer}>

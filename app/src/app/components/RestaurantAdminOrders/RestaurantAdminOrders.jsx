@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import styles from './RestaurantAdminOrders.module.css';
 import { useRouter } from 'next/navigation';
-import { FaArrowLeft } from 'react-icons/fa'; 
+import { FaArrowLeft } from 'react-icons/fa';
 
 const RestaurantAdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -20,12 +20,9 @@ const RestaurantAdminOrders = () => {
 
     const checkAuth = () => {
       const role = localStorage.getItem('role');
-      console.log('Role in component:', role);
-      
       if (role === 'restaurantadmin') {
         setIsAuthorized(true);
       } else {
-        console.log('Role does not match admin, redirecting to /notauthenticated');
         router.push('/notauthenticated');
       }
     };
@@ -54,7 +51,7 @@ const RestaurantAdminOrders = () => {
     const username = localStorage.getItem('username');
     if (!username) {
       console.error('Username not found in local storage');
-      return;
+      return [];
     }
     
     const response = await axios.get(`http://localhost:8000/orders/${username}`);
@@ -65,7 +62,7 @@ const RestaurantAdminOrders = () => {
     const username = localStorage.getItem('username');
     if (!username) {
       console.error('Username not found in local storage');
-      return;
+      return [];
     }
     
     const response = await axios.get(`http://localhost:8000/deliverers/free/${username}`);
@@ -111,11 +108,15 @@ const RestaurantAdminOrders = () => {
         {orders.map(order => (
           <li key={order.id} className={styles.orderItem}>
             <div className={styles.orderInfo}>
-              <span>Order ID: {order.id} </span><br></br>
-              <span>Status: {order.status} </span><br></br>
-              <span>Total Price: {order.total_price}$ </span><br></br>
-              <span>Delivery Time: {new Date(order.delivery_time).toLocaleString()} </span><br></br>
-              <span>Deliverer: {order.deliverer_username || 'Not assigned'}</span><br></br>
+              <span><strong>Order ID:</strong> {order.id}</span><br />
+              <span><strong>Status:</strong> {order.status}</span><br />
+              <span><strong>Total Price:</strong> {order.total_price}$</span><br />
+              <span><strong>Delivery Time:</strong> {order.delivery_time}</span><br />
+              <span><strong>Deliverer:</strong> {order.deliverer_username || 'Not assigned'}</span><br />
+              <span><strong>Restaurant:</strong> {order.restaurant ? order.restaurant.name : 'Unknown'}</span><br />
+              <span><strong>Customer:</strong> {order.customer ? order.customer.name : 'Unknown'}</span><br />
+              <span><strong>Customer Address:</strong> {order.customer ? order.customer.address : 'Unknown'}</span><br />
+              <span><strong>Customer Email:</strong> {order.customer ? order.customer.email : 'Unknown'}</span><br />
             </div>
             <div className={styles.orderActions}>
               {order.status === 'pending' && (

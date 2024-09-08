@@ -4,6 +4,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    background-color: #f9f9f9;
 }
 
 .header {
@@ -27,7 +28,7 @@
 .navButton {
     margin-left: 15px;
     padding: 10px 20px;
-    background-color: #ff5a5f;
+    background-color: #007bff;
     color: #fff;
     border: none;
     cursor: pointer;
@@ -35,13 +36,21 @@
 }
 
 .navButton:hover {
-    background-color: #e04a4f;
+    background-color: #0056b3;
+    text-decoration: underline;
 }
 
 .mainContent {
     flex: 1;
     padding: 40px 20px;
     background-color: #f9f9f9;
+    width: 70%;
+    margin: auto;
+}
+
+.h2 {
+    text-align: center;
+    padding: 20px;
 }
 
 .intro {
@@ -120,14 +129,14 @@
 
 .categoryItem {
     padding: 10px 20px;
-    background-color: #ff5a5f;
+    background-color: #007bff;
     color: #fff;
     border-radius: 5px;
     cursor: pointer;
 }
 
 .categoryItem:hover {
-    background-color: #e04a4f;
+    background-color: #0056b3;
 }
 
 .apply {
@@ -148,7 +157,7 @@
 
 .applyForm button {
     padding: 15px;
-    background-color: #ff5a5f;
+    background-color: #007bff;
     color: #fff;
     border: none;
     cursor: pointer;
@@ -156,7 +165,7 @@
 }
 
 .applyForm button:hover {
-    background-color: #e04a4f;
+    background-color: #0056b3;
 }
 
 .toggleTitle {
@@ -182,7 +191,7 @@
 }
 
 .footerLinks a {
-    color: #ff5a5f;
+    color: #007bff;
     margin: 0 10px;
     text-decoration: none;
 }
@@ -190,3 +199,6 @@
 .footerLinks a:hover {
     text-decoration: underline;
 }
+
+
+

@@ -73,18 +73,19 @@ const CustomerOrdersOverview = ({ username }) => {
           <p><strong>Status:</strong> {order.status}</p>
           <p><strong>Ordered At:</strong> {new Date(order.created_at).toLocaleString()}</p>
           <p><strong>Delivery Time:</strong> {new Date(order.delivery_time).toLocaleString()}</p>
+          <p><strong>Delivered Time:</strong> {order.delivered_time ? new Date(order.delivered_time).toLocaleString() : 'N/A'}</p>
           <p><strong>Payment Method:</strong> {order.payment_method}</p>
           <div className={styles.foodItems}>
             <h4>Items Ordered:</h4>
             <ul>
               {order.food_items.map((item, index) => (
                 <li key={index}>
-                  {item.quantity} x {item.name} (${item.price.toFixed(2)})
+                  {item.quantity} x {item.name} ({item.price.toFixed(2)})
                 </li>
               ))}
             </ul>
           </div>
-          <p><strong>Total Price:</strong> ${order.total_price.toFixed(2)}</p>
+          <p><strong>Total Price:</strong> {order.total_price.toFixed(2)}</p>
         </div>
       ))}
     </div>

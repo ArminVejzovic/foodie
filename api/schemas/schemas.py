@@ -154,4 +154,7 @@ class RatingCreate(BaseModel):
     comment: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class TokenData(BaseModel):
+    token: str

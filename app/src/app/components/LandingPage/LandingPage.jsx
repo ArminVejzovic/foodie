@@ -121,18 +121,21 @@ const LandingPage = () => {
 
       <main className={styles.mainContent}>
         <section className={styles.intro}>
-          <h1>Discover the Best Restaurants Near You</h1>
-          <p>Explore the most delicious meals from top-rated restaurants in your area.</p>
+        <h1>Discover the Best Restaurants Near You</h1> 
+        <p>Explore the most delicious meals from top-rated restaurants in your area.</p> 
+        <p>Whether you're craving local specialties or international cuisine, our platform brings the best dishes directly to your doorstep. Take your dining experience to the next level with just a few clicks.</p> 
+        <p>Our easy-to-use interface allows you to browse restaurants, view menus, and place orders effortlessly. Track your delivery and enjoy real-time updates as your meal makes its way to you.</p> 
+        <p>Join thousands of satisfied users who rely on our platform for fast, convenient, and delicious food deliveries.</p>
         </section>
 
         <section className={styles.restaurants}>
-          <h2>Popular Restaurants</h2>
+          <h2 className={styles.h2}>Popular Restaurants</h2>
           {loading ? (
             <p>Loading...</p>
           ) : (
             restaurants.map((restaurant) => (
               <div key={restaurant.id} className={styles.dropdown}>
-                <button 
+                <button
                   className={styles.dropdownButton}
                   onClick={() => handleRestaurantClick(restaurant.id)}
                 >
@@ -165,10 +168,11 @@ const LandingPage = () => {
               </div>
             ))
           )}
+
         </section>
 
         <section className={styles.categories}>
-          <h2>Popular Restaurant Categories</h2>
+          <h2 className={styles.h2}>Popular Restaurant Categories</h2>
           <div className={styles.categoryList}>
             {restaurantTypes.map((type) => (
               <div key={type.id} className={styles.categoryItem}>{type.name}</div>
@@ -177,7 +181,7 @@ const LandingPage = () => {
         </section>
 
         <section className={styles.categories}>
-          <h2>Popular Food Categories</h2>
+          <h2 className={styles.h2}>Popular Food Categories</h2>
           <div className={styles.categoryList}>
             {foodTypes.map((type) => (
               <div key={type.id} className={styles.categoryItem}>{type.name}</div>

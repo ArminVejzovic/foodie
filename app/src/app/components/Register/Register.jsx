@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import styles from "./Register.module.css";
 import Link from "next/link";
+import { FaArrowLeft } from 'react-icons/fa'; 
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -41,6 +42,8 @@ export default function Register() {
   const [longitude, setLongitude] = useState("");
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [message, setMessage] = useState(""); // Za uspešne poruke
+  const [errorMessage, setErrorMessage] = useState(""); // Za greške
 
   useEffect(() => {
     document.title = "Register - Foodie";
@@ -63,16 +66,26 @@ export default function Register() {
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
       });
-      router.push("/login");
+      setMessage("Registration successful! Redirecting to login...");
+      setTimeout(() => router.push("/login"), 2000); // Čekaj 2 sekunde pre nego što preusmeriš
     } catch (error) {
+      setErrorMessage("Error registering. Please try again.");
       console.error("Error registering", error);
     }
   };
 
+  const handleGoBack = () => {
+    router.back();
+  };
+
   return (
     <div className={styles.container}>
+      <button className={styles.backButton} onClick={handleGoBack}>
+        <FaArrowLeft size={20} />
+      </button>
       <form onSubmit={handleSubmit} className={styles.form}>
         <h2 className={styles.title}>Register Customer</h2>
+        
         <p>Pick your location</p>
         <div className={styles.mapContainer}>
           <MapContainer
@@ -97,11 +110,11 @@ export default function Register() {
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>Username:</label>
-          <input type="text" className={styles.input} value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input type="text" className={styles.input} value={username} onChange={(e) => setUsername(e.target.value)} required />
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>Email:</label>
-          <input type="email" className={styles.input} value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input type="email" className={styles.input} value={email} onChange={(e) => setEmail(e.target.value)} required/>
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>Password:</label>
@@ -111,6 +124,7 @@ export default function Register() {
               className={styles.input}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
             <button
               type="button"
@@ -123,26 +137,28 @@ export default function Register() {
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>First Name:</label>
-          <input type="text" className={styles.input} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          <input type="text" className={styles.input} value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>Last Name:</label>
-          <input type="text" className={styles.input} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          <input type="text" className={styles.input} value={lastName} onChange={(e) => setLastName(e.target.value)} required />
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>Address:</label>
-          <input type="text" className={styles.input} value={address} onChange={(e) => setAddress(e.target.value)} />
+          <input type="text" className={styles.input} value={address} onChange={(e) => setAddress(e.target.value)} required />
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>Latitude:</label>
-          <input type="text" className={styles.input} value={latitude} onChange={(e) => setLatitude(e.target.value)} />
+          <input type="text" className={styles.input} value={latitude} onChange={(e) => setLatitude(e.target.value)} required />
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>Longitude:</label>
-          <input type="text" className={styles.input} value={longitude} onChange={(e) => setLongitude(e.target.value)} />
+          <input type="text" className={styles.input} value={longitude} onChange={(e) => setLongitude(e.target.value)} required />
         </div>
         <button type="submit" className={styles.submitButton}>Register</button>
       </form>
+      {message && <div className={styles.successMessage}>{message}</div>}
+      {errorMessage && <div className={styles.errorMessage}>{errorMessage}</div>}
       <p className={styles.accountText}>
         Already have an account? <Link href="/login" className={styles.loginLink}>Login</Link>
       </p>

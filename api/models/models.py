@@ -14,7 +14,7 @@ class Restaurant(Base):
     street = Column(String, nullable=False)
     city = Column(String, nullable=False)
     stars = Column(Integer, nullable=False)
-    category = Column(String, nullable=False) # povezati sa lookap tabelom
+    category = Column(String, nullable=False)
     distance_limit = Column(Float, nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -178,7 +178,7 @@ class Notification(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     restaurant_id = Column(Integer, ForeignKey('restaurants.id'), nullable=False)
     order_id = Column(Integer, ForeignKey('orders.id'), nullable=False)
-    #is_read = Column(Boolean, default=False)
+    is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     restaurant = relationship("Restaurant", back_populates="notifications")
@@ -197,3 +197,10 @@ class Rating(Base):
     customer = relationship("Customer", back_populates="ratings")
     restaurant = relationship("Restaurant", back_populates="ratings")
     order = relationship("Order", back_populates="ratings")
+
+class ActiveSession(Base):
+    __tablename__ = 'active_sessions'
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    username = Column(String, unique=True, nullable=False)
+    token = Column(String, unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

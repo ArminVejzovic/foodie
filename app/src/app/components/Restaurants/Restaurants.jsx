@@ -45,6 +45,10 @@ const Restaurants = () => {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     document.title = "Restaurants - Admin";
@@ -102,6 +106,13 @@ const Restaurants = () => {
   };
 
   const createRestaurant = async () => {
+      if (!newRestaurant.name || !newRestaurant.latitude || !newRestaurant.longitude || !newRestaurant.street || 
+        !newRestaurant.city || !newRestaurant.stars || !newRestaurant.category || !newRestaurant.distance_limit) {
+      setErrorMessage('All fields are required. Please fill in all fields.');
+      setTimeout(() => setErrorMessage(''), 3000); // Clear error after 3 seconds
+      return; // Prevent the API call if validation fails
+    }
+    setIsCreating(true); 
     try {
       await axios.post('http://localhost:8000/restaurants', newRestaurant);
       fetchActiveRestaurants();
@@ -117,10 +128,24 @@ const Restaurants = () => {
       });
     } catch (error) {
       console.error('Error creating restaurant:', error);
+      setErrorMessage('Error creating restaurant. Please try again.');
+      setTimeout(() => setErrorMessage(''), 2000);
+    } finally {
+      setIsCreating(false);
+      setSuccessMessage('Restaurant created successfully!');
+      setTimeout(() => setSuccessMessage(''), 2000);
     }
   };
 
   const updateRestaurant = async () => {
+    if (!editRestaurant.name || !editRestaurant.latitude || !editRestaurant.longitude || !editRestaurant.street || 
+        !editRestaurant.city || !editRestaurant.stars || !editRestaurant.category || !editRestaurant.distance_limit) {
+      setErrorMessage('All fields are required. Please fill in all fields.');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+
+    setIsUpdating(true);
     try {
       if (selectedRestaurant) {
         await axios.put(`http://localhost:8000/restaurants/${selectedRestaurant.id}`, editRestaurant);
@@ -136,11 +161,18 @@ const Restaurants = () => {
           category: '',
           distance_limit: ''
         });
+        setSuccessMessage('Restaurant updated successfully!');
+        setTimeout(() => setSuccessMessage(''), 2000);
       }
     } catch (error) {
       console.error('Error updating restaurant:', error);
+      setErrorMessage('Error updating restaurant. Please try again.');
+      setTimeout(() => setErrorMessage(''), 2000);
+    } finally {
+      setIsUpdating(false);
     }
   };
+
 
   const archiveRestaurant = async (id) => {
     try {
@@ -283,7 +315,11 @@ const Restaurants = () => {
             className={styles.input}
           />
         </div>
-        <button onClick={createRestaurant} className={styles.button}>Create</button>
+        <button onClick={createRestaurant} className={styles.button} disabled={isCreating}>{isCreating ? 'Creating...' : 'Create'}</button>
+        <div className={styles.messages}>
+          {errorMessage && <div className={styles.errorMessage}>{errorMessage}</div>}
+          {successMessage && <div className={styles.successMessage}>{successMessage}</div>}
+        </div>
       </div>
 
       <div className={styles.section}>
@@ -372,11 +408,17 @@ const Restaurants = () => {
             />
           </div>
           <div className={styles.buttonGroup}>
-            <button onClick={updateRestaurant} className={styles.button}>Update</button>
+            <button onClick={updateRestaurant} className={styles.button} disabled={isUpdating}>{isUpdating ? 'Updating...' : 'Update'}</button>
             <button onClick={cancelEdit} className={styles.button}>Cancel</button>
           </div>
+      
         </div>
       )}
+
+      <div className={styles.messages}>
+        {errorMessage && <div className={styles.errorMessage}>{errorMessage}</div>}
+        {successMessage && <div className={styles.successMessage}>{successMessage}</div>}
+      </div>
 
       <div className={styles.section}>
         <h2 className={styles.subtitle}>Archived Restaurants</h2>

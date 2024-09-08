@@ -33,7 +33,7 @@ const AdminOverview = () => {
     checkAuth();
   }, [router]);
 
-  useEffect(() => {
+  const fetchData = () => {
     axios.get('http://localhost:8000/all_restaurants')
       .then(response => setRestaurants(response.data))
       .catch(error => console.error("There was an error fetching the restaurants!", error));
@@ -45,6 +45,12 @@ const AdminOverview = () => {
     axios.get('http://localhost:8000/all_orders')
       .then(response => setOrders(response.data))
       .catch(error => console.error("There was an error fetching the orders!", error));
+  };
+
+  useEffect(() => {
+    fetchData();
+    const intervalId = setInterval(fetchData, 10000);
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleGoBack = () => {
@@ -69,9 +75,10 @@ const AdminOverview = () => {
               <tr>
                 <th>Name</th>
                 <th>City</th>
+                <th>Street</th>
                 <th>Stars</th>
                 <th>Category</th>
-                <th>Active</th>
+                <th>Distance Limit</th>
               </tr>
             </thead>
             <tbody>
@@ -79,9 +86,10 @@ const AdminOverview = () => {
                 <tr key={restaurant.id}>
                   <td>{restaurant.name}</td>
                   <td>{restaurant.city}</td>
+                  <td>{restaurant.street}</td>
                   <td>{restaurant.stars}</td>
                   <td>{restaurant.category}</td>
-                  <td>{restaurant.is_active ? "Yes" : "No"}</td>
+                  <td>{restaurant.distance_limit}</td>
                 </tr>
               ))}
             </tbody>
@@ -123,11 +131,11 @@ const AdminOverview = () => {
                 <th>Restaurant</th>
                 <th>Deliverer</th>
                 <th>Total Price</th>
-                <th>Quantity</th>
                 <th>Status</th>
                 <th>Delivery Time</th>
+                <th>Delivered Time</th>
                 <th>Payment Method</th>
-                <th>Created At</th>
+                <th>Food Items</th>
               </tr>
             </thead>
             <tbody>
@@ -137,11 +145,14 @@ const AdminOverview = () => {
                   <td data-label="Restaurant">{order.restaurant}</td>
                   <td data-label="Deliverer">{order.deliverer}</td>
                   <td data-label="Total Price">{order.total_price}</td>
-                  <td data-label="Quantity">{order.quantity}</td>
                   <td data-label="Status">{order.status}</td>
-                  <td data-label="Delivery Time">{order.delivery_time ? new Date(order.delivery_time).toLocaleString() : 'N/A'}</td>
+                  <td data-label="Delivery Time">
+                    {order.delivery_time ? new Date(new Date(order.delivery_time).setHours(new Date(order.delivery_time).getHours() + 2)).toLocaleString() : 'N/A'}
+                  </td>
+                  <td data-label="Delivered Time">
+                    {order.delivered_time ? new Date(new Date(order.delivered_time).setHours(new Date(order.delivered_time).getHours() + 2)).toLocaleString() : 'N/A'}
+                  </td>
                   <td data-label="Payment Method">{order.payment_method}</td>
-                  <td data-label="Created At">{new Date(order.created_at).toLocaleString()}</td>
                   <td>
                     {order.food_items.map((item, index) => (
                       <div key={index}>

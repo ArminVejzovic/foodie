@@ -27,6 +27,22 @@
     flex-direction: column;
     gap: 10px;
   }
+
+  .successMessage {
+    color: green;
+    font-size: 14px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .errorMessage {
+    color: red;
+    font-size: 14px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
   
   .input {
     padding: 10px;

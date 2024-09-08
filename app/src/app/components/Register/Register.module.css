@@ -91,10 +91,37 @@
     margin-left: 10px;
   }
   
+  .backButton {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    padding: 5px 5px;
+    background-color: darkgray;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  
+  
+  .backButton:hover {
+    background-color: gray;
+  }
+
+  .successMessage {
+    color: green;
+    font-size: 14px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
   .errorMessage {
     color: red;
     font-size: 14px;
     margin-top: 10px;
+    margin-bottom: 10px;
+    text-align: center;
   }
 
   .accountText {

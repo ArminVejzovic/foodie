@@ -70,6 +70,12 @@
     cursor: pointer;
 }
 
+.popupContent {
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
 .submitButton:hover {
     background-color: #0056b3;
 }

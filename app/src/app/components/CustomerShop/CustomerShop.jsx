@@ -54,10 +54,17 @@ const CustomerShop = () => {
     }, []);
 
     useEffect(() => {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        const europeanDate = now.toISOString().slice(0, 16);
-        setDeliveryTime(europeanDate);
+        const updateDeliveryTime = () => {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            const europeanDate = now.toISOString().slice(0, 16);
+            setDeliveryTime(europeanDate);
+        };
+    
+        updateDeliveryTime();
+        const intervalId = setInterval(updateDeliveryTime, 60000);
+    
+        return () => clearInterval(intervalId);
     }, []);
 
     const handleSearch = (event) => {
@@ -223,7 +230,7 @@ const CustomerShop = () => {
                                     value={deliveryTime}
                                     onChange={(e) => setDeliveryTime(e.target.value)}
                                     className={styles.deliveryTimeInput}
-                                    min={deliveryTime} // Postavljanje minimalnog vremena na trenutni datum i vrijeme
+                                    min={deliveryTime}
                                 />
                                 <select
                                     onChange={handlePaymentMethodChange}
@@ -255,6 +262,7 @@ const CustomerShop = () => {
                             <h1 className={styles.restaurantTitle}>{restaurant.restaurant_name}</h1>
                             {restaurant.food_items.map(item => (
                                 <div key={item.id} className={styles.foodItemCard}>
+                                    {item.star && <div className={styles.popularBadge}>★</div>}
                                     <h4 className={styles.foodItemName}>{item.name}</h4>
                                     {item.image && <img src={`data:image/jpeg;base64,${item.image}`} alt={item.name} className={styles.foodItemImage} />}
                                     <p className={styles.foodItemDescription}>{item.description}</p>

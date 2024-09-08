@@ -176,23 +176,25 @@ const ViewOrdersOnMap = () => {
             >
               <Popup>
                 {ordersAtLocation.length > 1 ? (
-                  ordersAtLocation.map((order, index) => (
-                    <div key={order.id}>
-                      <b>Order {index + 1}:</b> ID {order.id} <br />
-                      <b>Total Price:</b> {order.total_price} <br />
-                      <b>Status:</b> <span style={{
-                        backgroundColor: getMarkerColor(order.status),
-                        borderRadius: '50%',
-                        width: '12px',
-                        height: '12px',
-                        display: 'inline-block',
-                        marginLeft: '5px'
-                      }}></span> <br />
-                      <hr />
-                    </div>
-                  ))
+                  <div className={styles.popupContent}>
+                    {ordersAtLocation.map((order, index) => (
+                      <div key={order.id}>
+                        <b>Order {index + 1}:</b> ID {order.id} <br />
+                        <b>Total Price:</b> {order.total_price} <br />
+                        <b>Status:</b> <span style={{
+                          backgroundColor: getMarkerColor(order.status),
+                          borderRadius: '50%',
+                          width: '12px',
+                          height: '12px',
+                          display: 'inline-block',
+                          marginLeft: '5px'
+                        }}></span> <br />
+                        <hr />
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <div>
+                  <div className={styles.popupContent}> 
                     <b>Order ID:</b> {ordersAtLocation[0].id} <br />
                     <b>Status:</b> <span style={{
                       backgroundColor: getMarkerColor(ordersAtLocation[0].status),

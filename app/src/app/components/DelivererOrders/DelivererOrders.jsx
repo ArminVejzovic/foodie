@@ -96,31 +96,43 @@ const DelivererOrders = () => {
           </thead>
           <tbody>
             {orders.map(order => (
-              <tr key={order.id}>
-                <td>{order.customer_name}</td>
-                <td>{order.restaurant_name}</td>
-                <td>{order.total_price}</td>
-                <td>{order.status}</td>
-                <td>{order.payment_method}</td>
-                <td>{order.delivery_time ? new Date(order.delivery_time).toLocaleString() : "Not Set"}</td>
-                <td>{order.delivered_time ? new Date(order.delivered_time).toLocaleString() : "Not Delivered"}</td>
-                <td>
-                  <ul style={{ listStyleType: 'none', padding: 0 }}>
-                    {order.food_items.map((item, index) => (
-                      <li key={index}>
-                        {item.name} x {item.quantity}  {item.price} x {item.quantity} = {(item.price * item.quantity).toFixed(2)}
-                      </li>
-                    ))}
-                  </ul>
-                </td>
-                <td>
-                  {order.status === "delivered" ? (
-                    <button className={styles.button} onClick={() => handleResetStatus(order.id)}>Mark as Not Delivered</button>
-                  ) : order.status === "assigned" ? (
-                    <button className={styles.button} onClick={() => handleStatusChange(order.id, "delivered")}>Mark as Delivered</button>
-                  ) : null}
-                </td>
-              </tr>
+              <tr key={order.id} className={order.status === "delivered" ? styles.delivered : styles.assigned}>
+              <td>
+                {order.customer.name}
+                <br />
+                {order.customer.username}
+                <br />
+                {order.customer.address}
+              </td>
+              <td>
+                {order.restaurant.name}
+                <br />
+                {order.restaurant.street}
+                <br />
+                {order.restaurant.city}
+              </td>
+              <td>{order.total_price.toFixed(2)}</td>
+              <td>{order.status}</td>
+              <td>{order.payment_method}</td>
+              <td>{order.delivery_time ? new Date(order.delivery_time).toLocaleString() : "Not Set"}</td>
+              <td>{order.delivered_time ? new Date(order.delivered_time).toLocaleString() : "Not Delivered"}</td>
+              <td>
+                <ul style={{ listStyleType: 'none', padding: 0 }}>
+                  {order.food_items.map((item, index) => (
+                    <li key={index}>
+                      {item.name} x {item.quantity} = {item.price.toFixed(2)}
+                    </li>
+                  ))}
+                </ul>
+              </td>
+              <td>
+                {order.status === "delivered" ? (
+                  <button className={styles.button} onClick={() => handleResetStatus(order.id)}>Mark as Not Delivered</button>
+                ) : order.status === "assigned" ? (
+                  <button className={styles.button} onClick={() => handleStatusChange(order.id, "delivered")}>Mark as Delivered</button>
+                ) : null}
+              </td>
+            </tr>
             ))}
           </tbody>
         </table>

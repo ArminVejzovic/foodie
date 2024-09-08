@@ -3,7 +3,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
-from models.models import Admin, RestaurantAdmin, Deliverer, Customer, Restaurant
+from models.models import ActiveSession, Admin, RestaurantAdmin, Deliverer, Customer, Restaurant
 from database.database import get_db
 from utils.hashing import verify_password, get_password_hash
 from schemas.schemas import Token, TokenData
@@ -13,9 +13,20 @@ ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def create_access_token(data: dict):
+def create_access_token(data: dict, db: Session):
     to_encode = data.copy()
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    existing_session = db.query(ActiveSession).filter(ActiveSession.username == data["sub"]).first()
+    
+    if existing_session:
+        db.delete(existing_session)
+        db.commit()
+
+    new_session = ActiveSession(username=data['sub'], token=encoded_jwt, created_at=datetime.utcnow())
+    db.add(new_session)
+    db.commit()
+
     return encoded_jwt
 
 def get_user_by_username(db: Session, username: str):
@@ -60,3 +71,5 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm, db: Sessi
     role = user.__class__.__name__
     access_token = create_access_token(data={"sub": user.username, "role": role})
     return Token(access_token=access_token, token_type="bearer")
+
+

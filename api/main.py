@@ -15,7 +15,7 @@ from fastapi import FastAPI, Depends, Form, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 import pytz
-from sqlalchemy import func, or_
+from sqlalchemy import desc, func, or_
 from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -26,9 +26,9 @@ from typing import List, Optional
 from utils.hashing import verify_password, get_password_hash
 from models import models
 from autentikacija.middleware import admin_required, restaurant_admin_required
-from models.models import Admin, Customer, Deliverer, FoodItem, FoodType, Menu, MenuFoodItem, Notification, Order, OrderFoodItem, Rating, Restaurant, RestaurantAdmin, RestaurantType
+from models.models import ActiveSession, Admin, Customer, Deliverer, FoodItem, FoodType, Menu, MenuFoodItem, Notification, Order, OrderFoodItem, Rating, Restaurant, RestaurantAdmin, RestaurantType
 from autentikacija.autentikacija import ALGORITHM, SECRET_KEY, create_access_token, get_current_user, get_user_by_username, oauth2_scheme
-from schemas.schemas import AdminCreate, ApplyDeliverer, ApplyPartner, ApproveOrderRequest, AssignOrderRequest, DelivererCreate, DelivererResponse, FoodItemCreate, FoodItemUpdate, FoodTypeCreate, OrderCreate, OrderResponse, RatingCreate, RequestPasswordResetSchema, ResetPasswordSchema, RestaurantAdminCreate, RestaurantCreate, RestaurantTypeCreate, RestaurantUpdate, StatusUpdate, Token, CustomerCreate, VerifyResetCodeSchema
+from schemas.schemas import AdminCreate, ApplyDeliverer, ApplyPartner, ApproveOrderRequest, AssignOrderRequest, DelivererCreate, DelivererResponse, FoodItemCreate, FoodItemUpdate, FoodTypeCreate, OrderCreate, OrderResponse, RatingCreate, RequestPasswordResetSchema, ResetPasswordSchema, RestaurantAdminCreate, RestaurantCreate, RestaurantTypeCreate, RestaurantUpdate, StatusUpdate, Token, CustomerCreate, TokenData, VerifyResetCodeSchema
 from database.database import get_db, engine
 from sqlalchemy.orm import joinedload, aliased
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -73,7 +73,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"sub": user.username}, db=db)
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/validate-token")
@@ -97,11 +97,36 @@ def index():
     passw = "admin123"
     return {"password": get_password_hash(passw)}
 
-
 @app.get("/get-role/{username}")
 def get_role(username: str, db: Session = Depends(get_db)):
     user = get_user_by_username(db, username)
     return {"role": user.role}
+
+
+@app.post("/logout")
+def logout(token_data: TokenData, db: Session = Depends(get_db)):
+    try:
+        token = token_data.token
+        
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+            )
+
+        session = db.query(ActiveSession).filter(ActiveSession.username == username).first()
+        if session:
+            db.delete(session)
+            db.commit()
+        return {"message": "Successfully logged out"}
+    
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
 
 @app.get("/restaurants/{restaurant_id}/food_items")
 def get_food_items_for_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
@@ -235,7 +260,7 @@ def update_restaurant(restaurant_id: int, restaurant: RestaurantUpdate, db: Sess
 
 @app.get("/restaurants")
 def get_all_restaurants(db: Session = Depends(get_db)):
-    return db.query(Restaurant).all()
+    return db.query(Restaurant).filter(Restaurant.is_active == True).all()
 
 @app.get("/restaurants/{restaurant_id}")
 def get_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
@@ -621,7 +646,6 @@ def read_orders(db: Session = Depends(get_db)):
     if not orders:
         raise HTTPException(status_code=404, detail="Orders not found")
     
-    # Prepare the data
     result = []
     for order in orders:
         order_data = {
@@ -630,11 +654,10 @@ def read_orders(db: Session = Depends(get_db)):
             "restaurant": order.restaurant.name,
             "deliverer": order.deliverer.username if order.deliverer else "N/A",
             "total_price": order.total_price,
-            "quantity": sum(item.quantity for item in order.food_items),
             "status": order.status,
             "delivery_time": order.delivery_time,
+            "delivered_time": order.delivered_time,
             "payment_method": order.payment_method,
-            "created_at": order.created_at,
             "food_items": [{"name": item.food_item.name, "quantity": item.quantity} for item in order.food_items],
         }
         result.append(order_data)
@@ -690,7 +713,7 @@ def get_orders(username: str, db: Session = Depends(get_db)):
     orders = db.query(Order).filter(
         Order.restaurant_id == restaurant_admin.restaurant_id,
         (Order.status == "pending") | (Order.status == "approved")
-    ).order_by(Order.delivery_time).all()
+    ).order_by(Order.delivery_time.desc()).all()
 
     order_responses = []
     for order in orders:
@@ -698,15 +721,28 @@ def get_orders(username: str, db: Session = Depends(get_db)):
         if order.deliverer_id:
             deliverer = db.query(Deliverer).filter(Deliverer.id == order.deliverer_id).first()
             deliverer_username = deliverer.username
-        order_responses.append(OrderResponse(
-            id=order.id, 
-            status=order.status, 
-            total_price=order.total_price,
-            deliverer_id=order.deliverer_id,
-            deliverer_username=deliverer_username,
-            delivery_time=order.delivery_time.strftime("%Y-%m-%d %H:%M:%S") if order.delivery_time else "No delivery time set"
-        ))
+
+        restaurant = db.query(Restaurant).filter(Restaurant.id == order.restaurant_id).first()
+        customer = db.query(Customer).filter(Customer.id == order.customer_id).first()
+
+        order_responses.append({
+            "id": order.id,
+            "status": order.status,
+            "total_price": order.total_price,
+            "deliverer_id": order.deliverer_id,
+            "deliverer_username": deliverer_username,
+            "delivery_time": order.delivery_time.strftime("%Y-%m-%d %H:%M:%S") if order.delivery_time else "No delivery time set",
+            "restaurant": {
+                "name": restaurant.name,
+            },
+            "customer": {
+                "name": f"{customer.first_name} {customer.last_name}",
+                "address": customer.address,
+                "email": customer.email
+            }
+        })
     return order_responses
+
 
 @app.get("/deliverers/free/{username}")
 def get_free_deliverers(username: str, db: Session = Depends(get_db)):
@@ -717,10 +753,13 @@ def get_free_deliverers(username: str, db: Session = Depends(get_db)):
     free_deliverers = db.query(Deliverer).filter(
         Deliverer.restaurant_id == restaurant_admin.restaurant_id
     ).options(joinedload(Deliverer.orders)).all()
+
     result = []
     for deliverer in free_deliverers:
-        if not deliverer.orders or all(order.status == 'delivered' for order in deliverer.orders):
-            result.append(DelivererResponse(id=deliverer.id, username=deliverer.username))
+        active_session = db.query(ActiveSession).filter(ActiveSession.username == deliverer.username).first()
+        if active_session:
+            if not deliverer.orders or all(order.status == 'delivered' for order in deliverer.orders):
+                result.append(DelivererResponse(id=deliverer.id, username=deliverer.username))
 
     return result
 
@@ -790,6 +829,7 @@ def get_today_orders(deliverer_id: int, db: Session = Depends(get_db)):
             joinedload(Order.restaurant),
             joinedload(Order.food_items).joinedload(OrderFoodItem.food_item),
         )
+        .order_by(desc(Order.delivered_time))
         .all()
     )
     result = []
@@ -806,8 +846,16 @@ def get_today_orders(deliverer_id: int, db: Session = Depends(get_db)):
 
         order_data = {
             "id": order.id,
-            "customer_name": order.customer.username,
-            "restaurant_name": order.restaurant.name,
+            "customer": {
+                "name": f"{order.customer.first_name} {order.customer.last_name}",
+                "username": order.customer.username,
+                "address": order.customer.address
+            },
+            "restaurant": {
+                "name": order.restaurant.name,
+                "street": order.restaurant.street,
+                "city": order.restaurant.city
+            },
             "total_price": order.total_price,
             "quantity": sum(item.quantity for item in order.food_items),
             "status": order.status,
@@ -1054,7 +1102,7 @@ def get_orders_for_customer(username: str, db: Session = Depends(get_db)):
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
 
-    orders = db.query(Order).filter(Order.customer_id == customer.id).all()
+    orders = db.query(Order).filter(Order.customer_id == customer.id).order_by(Order.created_at.desc()).all()
     
     orders_details = []
     for order in orders:
@@ -1096,8 +1144,30 @@ async def get_notifications(username: str, db: Session = Depends(get_db)):
     notifications = db.query(Notification).filter(
         Notification.restaurant_id == restaurant_admin.restaurant_id
     ).order_by(Notification.created_at.desc()).all()
+
+    # Izbroji nepročitane notifikacije
+    unread_count = db.query(Notification).filter(
+        Notification.restaurant_id == restaurant_admin.restaurant_id,
+        Notification.is_read == False
+    ).count()
+
+    return {"notifications": notifications, "unread_count": unread_count}
+
+@app.put("/notifications/mark_as_read/{username}")
+async def mark_notifications_as_read(username: str, db: Session = Depends(get_db)):
+    restaurant_admin = db.query(RestaurantAdmin).filter(RestaurantAdmin.username == username).first()
+    if not restaurant_admin:
+        raise HTTPException(status_code=404, detail="Restaurant admin not found")
     
-    return notifications
+    db.query(Notification).filter(
+        Notification.restaurant_id == restaurant_admin.restaurant_id,
+        Notification.is_read == False
+    ).update({"is_read": True})
+
+    db.commit()
+    return {"message": "Notifications marked as read"}
+
+
 
 @app.get("/deliverers/{username}")
 def get_deliverers_by_admin(username: str, db: Session = Depends(get_db)):
@@ -1427,7 +1497,7 @@ def rate_order(username: str, rating: RatingCreate, db: Session = Depends(get_db
 
     existing_rating = db.query(Rating).filter_by(customer_id=customer.id, order_id=order.id).first()
     if existing_rating:
-        raise HTTPException(status_code=400, detail="Order already rated.")
+        raise HTTPException(status_code=400, detail="Last delivered order already rated.")
 
     delivery_deadline = order.delivered_time + timedelta(hours=48)
     if datetime.utcnow() > delivery_deadline:
@@ -1455,9 +1525,34 @@ def get_ratings_for_admin(username: str, db: Session = Depends(get_db)):
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
     
-    ratings = db.query(Rating).filter(Rating.restaurant_id == admin.restaurant_id).order_by(Rating.created_at.desc()).all()
+    ratings = (db.query(Rating)
+                  .join(Customer, Rating.customer_id == Customer.id)
+                  .join(Restaurant, Rating.restaurant_id == Restaurant.id)
+                  .join(Order, Rating.order_id == Order.id)
+                  .filter(Rating.restaurant_id == admin.restaurant_id)
+                  .order_by(Rating.created_at.desc())
+                  .all())
     
     if not ratings:
         raise HTTPException(status_code=404, detail="No ratings found for this restaurant")
     
-    return ratings
+    return [
+        {
+            "id": rating.id,
+            "rating": rating.rating,
+            "comment": rating.comment,
+            "created_at": rating.created_at.isoformat(),
+            "customer": {
+                "username": rating.customer.username,
+                "email": rating.customer.email
+            },
+            "restaurant": {
+                "name": rating.restaurant.name,
+                "street": rating.restaurant.street
+            },
+            "order": {
+                "id": rating.order.id
+            }
+        }
+        for rating in ratings
+    ]

@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import axios from "../../../utils/axios";
 import styles from './Login.module.css';
 import Link from "next/link";
+import { FaArrowLeft } from 'react-icons/fa'; 
 
 export default function Login({ onRegisterClick }) {
   const [loginError, setLoginError] = useState(false);
@@ -118,8 +119,15 @@ export default function Login({ onRegisterClick }) {
     }
   };
 
+  const handleGoBack = () => {
+    router.back();
+  };
+
   return (
     <div className={styles.container}>
+      <button className={styles.backButton} onClick={handleGoBack}>
+          <FaArrowLeft size={20} />
+      </button>
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
         <h1 className={styles.title}>Login</h1>
         <div className={styles.formGroup}>
