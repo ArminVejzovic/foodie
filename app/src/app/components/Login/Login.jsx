@@ -2,12 +2,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import axios from "../../../utils/axios";
+import axios from "../../../../utils/axios.js";
 import styles from './Login.module.css';
 import Link from "next/link";
 import { FaArrowLeft } from 'react-icons/fa'; 
 
-export default function Login({ onRegisterClick }) {
+export default function Login() {
   const [loginError, setLoginError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();

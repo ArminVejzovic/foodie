@@ -1,15 +1,19 @@
 from datetime import datetime
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
-from models.models import ActiveSession, Admin, RestaurantAdmin, Deliverer, Customer, Restaurant
+from models.models import ActiveSession, Admin, RestaurantAdmin, Deliverer, Customer
 from database.database import get_db
-from utils.hashing import verify_password, get_password_hash
-from schemas.schemas import Token, TokenData
+from utils.hashing import verify_password
+from schemas.schemas import Token
+from dotenv import load_dotenv
+import os
 
-SECRET_KEY = "7H3m@R#j6u0mZlO1k5a@E2d4wB3Fg7Q9o&H8NpT@L%Iy2"
-ALGORITHM = "HS256"
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 

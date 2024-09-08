@@ -8,7 +8,6 @@ const RestaurantAdminNotifications = ({ username }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Fetch notifikacija sa intervalom svakih 5 sekundi
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -21,24 +20,21 @@ const RestaurantAdminNotifications = ({ username }) => {
       }
     };
 
-    fetchNotifications(); // Fetch odmah na mount
+    fetchNotifications();
 
-    // Interval koji provjerava notifikacije svakih 5 sekundi
     const intervalId = setInterval(fetchNotifications, 5000);
 
-    // Očisti interval kada se komponenta demontira
     return () => clearInterval(intervalId);
   }, [username]);
 
   const toggleNotifications = async () => {
     setIsOpen(!isOpen);
 
-    // Kada korisnik zatvori notifikacije, tada oznaci sve kao pročitane
     if (isOpen && unreadCount > 0) {
       try {
         const username = localStorage.getItem('username');
         await axios.put(`http://localhost:8000/notifications/mark_as_read/${username}`);
-        setUnreadCount(0); // Postavi nepročitane na 0
+        setUnreadCount(0);
         setNotifications((prevNotifications) =>
           prevNotifications.map((notif) => ({ ...notif, is_read: true }))
         );

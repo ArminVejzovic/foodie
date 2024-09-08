@@ -35,7 +35,6 @@ class Admin(Base):
     password = Column(String, nullable=False)
     role = Column(String, default="admin")
 
-    #chat_messages = relationship("ChatMessage", back_populates="receiver")
 
 
 class RestaurantAdmin(Base):
@@ -47,7 +46,6 @@ class RestaurantAdmin(Base):
     role = Column(String, default="restaurantadmin")
     restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
 
-    #chat_messages = relationship("ChatMessage", back_populates="restaurant_admin")
     restaurant = relationship("Restaurant", back_populates="restaurant_admins")
 
 class Deliverer(Base):
@@ -76,7 +74,6 @@ class Customer(Base):
     role = Column(String, default="customer")
 
     orders = relationship("Order", back_populates="customer")
-    #chat_messages = relationship("ChatMessage", back_populates="sender")
     ratings = relationship("Rating", back_populates="customer")
 
 class Menu(Base):
@@ -96,7 +93,7 @@ class Order(Base):
     customer_id = Column(Integer, ForeignKey('customers.id'))
     restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
     deliverer_id = Column(Integer, ForeignKey('deliverers.id'), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)     # fix this to be european time *******************
+    created_at = Column(DateTime, default=datetime.utcnow)
     delivered_time = Column(DateTime, nullable=True)  # Time when deliverer delivered order
     delivery_time = Column(DateTime, nullable=True)  # Time when customer wants to deliver order
     status = Column(String, default="pending")
@@ -155,23 +152,6 @@ class MenuFoodItem(Base):
     __tablename__ = 'menu_fooditem'
     menu_id = Column(Integer, ForeignKey('menus.id'), primary_key=True)
     fooditem_id = Column(Integer, ForeignKey('food_items.id'), primary_key=True)
-
-"""
-class ChatMessage(Base):
-    __tablename__ = 'chat_messages'
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    sender_id = Column(Integer, ForeignKey('customers.id'))
-    receiver_id = Column(Integer, ForeignKey('admins.id'))
-    restaurant_admin_id = Column(Integer, ForeignKey('restaurant_admins.id'))
-    deliverer_id = Column(Integer, ForeignKey('deliverers.id'))
-    message = Column(Text, nullable=False)
-    sent_at = Column(DateTime, default=datetime.utcnow)
-
-    sender = relationship("Customer", back_populates="chat_messages")
-    receiver = relationship("Admin", back_populates="chat_messages")
-    restaurant_admin = relationship("RestaurantAdmin", back_populates="chat_messages")
-    deliverer = relationship("Deliverer", back_populates="chat_messages")
-"""
 
 class Notification(Base):
     __tablename__ = 'notifications'

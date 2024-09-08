@@ -1,38 +1,34 @@
 import base64
 from email.mime.application import MIMEApplication
-from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import math
-import random
 import smtplib
-from email import encoders
-import string
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from io import BytesIO
-from fastapi import FastAPI, Depends, Form, HTTPException, Query, status
+from fastapi import FastAPI, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-import pytz
-from sqlalchemy import desc, func, or_
+from sqlalchemy import desc, func
 from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from datetime import date, datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
-from typing import List, Optional
+from typing import Optional
 from utils.hashing import verify_password, get_password_hash
 from models import models
-from autentikacija.middleware import admin_required, restaurant_admin_required
-from models.models import ActiveSession, Admin, Customer, Deliverer, FoodItem, FoodType, Menu, MenuFoodItem, Notification, Order, OrderFoodItem, Rating, Restaurant, RestaurantAdmin, RestaurantType
+from models.models import ActiveSession, Admin, Customer, Deliverer, FoodItem, FoodType, Menu, Notification, Order, OrderFoodItem, Rating, Restaurant, RestaurantAdmin, RestaurantType
 from autentikacija.autentikacija import ALGORITHM, SECRET_KEY, create_access_token, get_current_user, get_user_by_username, oauth2_scheme
-from schemas.schemas import AdminCreate, ApplyDeliverer, ApplyPartner, ApproveOrderRequest, AssignOrderRequest, DelivererCreate, DelivererResponse, FoodItemCreate, FoodItemUpdate, FoodTypeCreate, OrderCreate, OrderResponse, RatingCreate, RequestPasswordResetSchema, ResetPasswordSchema, RestaurantAdminCreate, RestaurantCreate, RestaurantTypeCreate, RestaurantUpdate, StatusUpdate, Token, CustomerCreate, TokenData, VerifyResetCodeSchema
+from schemas.schemas import AdminCreate, ApplyDeliverer, ApplyPartner, ApproveOrderRequest, AssignOrderRequest, DelivererCreate, DelivererResponse, FoodItemCreate, FoodItemUpdate, FoodTypeCreate, OrderCreate, OrderResponse, RatingCreate, RequestPasswordResetSchema, ResetPasswordSchema, RestaurantAdminCreate, RestaurantCreate, RestaurantTypeCreate, RestaurantUpdate, StatusUpdate, CustomerCreate, TokenData
 from database.database import get_db, engine
-from sqlalchemy.orm import joinedload, aliased
+from sqlalchemy.orm import joinedload
 from apscheduler.schedulers.background import BackgroundScheduler
-import openai
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -53,10 +49,10 @@ def start_application():
 
 app = start_application()
 
-SMTP_SERVER = 'smtp.office365.com'
-SMTP_PORT = 587
-SMTP_USER = 'foodie.restaurants@outlook.com'
-SMTP_PASSWORD = 'foodie123'
+SMTP_SERVER = os.getenv("SMTP_SERVER")
+SMTP_PORT = os.getenv("SMTP_PORT")
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
 def is_username_taken(db: Session, username: str) -> bool:
     return db.query(Admin).filter(Admin.username == username).first() or \
@@ -153,7 +149,7 @@ def get_food_items_for_restaurant(restaurant_id: int, db: Session = Depends(get_
             "name": item.name,
             "description": item.description,
             "price": item.price,
-            "image": item.image.decode() if item.image else None,
+            "image": base64.b64encode(item.image).decode('utf-8') if item.image else None,
             "discount_price": item.discount_price,
             "discount_start": item.discount_start,
             "discount_end": item.discount_end,
@@ -979,7 +975,7 @@ def get_restaurants_with_food_items(username: str, db: Session = Depends(get_db)
                     "name": item.name,
                     "description": item.description,
                     "price": item.price,
-                    "image": item.image.decode() if item.image else None,
+                    "image": base64.b64encode(item.image).decode('utf-8') if item.image else None,
                     "discount_price": item.discount_price,
                     "discount_start": item.discount_start,
                     "discount_end": item.discount_end,
@@ -1181,18 +1177,28 @@ def get_deliverers_by_admin(username: str, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching deliverers: {str(e)}")
 
-@app.get("/map/orders")
+@app.get("/map/orders/{username}")
 def get_orders_by_date(
+    username: str,
     selected_date: date, 
     deliverer_id: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     try:
-        query = db.query(Order).join(Customer).filter(func.date(Order.delivery_time) == selected_date)
+        restaurant_admin = db.query(RestaurantAdmin).filter(RestaurantAdmin.username == username).first()
+        if not restaurant_admin:
+            raise HTTPException(status_code=404, detail="RestaurantAdmin not found")
+
+        restaurant_id = restaurant_admin.restaurant_id
+        
+        query = db.query(Order).join(Customer).filter(
+            func.date(Order.delivery_time) == selected_date,
+            Order.restaurant_id == restaurant_id
+        )
         
         if deliverer_id:
             query = query.filter(Order.deliverer_id == int(deliverer_id))
-
+        
         orders = query.all()
         
         return [
@@ -1377,8 +1383,8 @@ def send_test_admin_report(db: Session = Depends(get_db)):
 
 # Forgot password
 
-JWT_SECRET_KEY = "your_jwt_secret_key"
-JWT_EXPIRATION_SECONDS = 600
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+JWT_EXPIRATION_SECONDS = os.getenv("JWT_EXPIRATION_SECONDS")
 
 def generate_reset_token(username: str, email: str, role: str) -> str:
     payload = {

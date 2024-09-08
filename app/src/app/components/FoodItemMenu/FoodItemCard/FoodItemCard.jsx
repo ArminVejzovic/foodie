@@ -128,7 +128,7 @@ const FoodItemCard = ({ foodItem, onFoodItemUpdated, onFoodItemDeleted }) => {
     } else {
         setEditedFoodItem(prevState => ({
             ...prevState,
-            image: null, // Ako fajl nije odabran, postavi image na null
+            image: null,
         }));
         setImagePreview('');
     }

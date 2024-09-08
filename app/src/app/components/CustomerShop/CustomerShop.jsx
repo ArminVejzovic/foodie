@@ -73,26 +73,68 @@ const CustomerShop = () => {
 
     const addToCart = (item) => {
         const quantity = itemQuantities[item.id] || 1;
-        const existingItemIndex = cart.findIndex(cartItem => cartItem.id === item.id);
     
-        const cartRestaurantId = cart.length > 0 ? cart[0].restaurant_id_food_item : item.restaurant_id_food_item;
-        if (cart.length > 0 && item.restaurant_id_food_item !== cartRestaurantId) {
-            setRestaurantError(`You can only add items from one restaurant at a time.`);
-            return;
-        } else {
-            setRestaurantError('');
-        }
+        // Popust logika
+        const now = new Date();
+        const discountStart = new Date(item.discount_start);
+        const discountEnd = new Date(item.discount_end);
     
-        if (existingItemIndex !== -1) {
-            const updatedCart = cart.map((cartItem, index) => 
-                index === existingItemIndex ? { ...cartItem, quantity: cartItem.quantity + quantity } : cartItem
-            );
-            setCart(updatedCart);
-        } else {
-            setCart([...cart, { ...item, quantity }]);
-            setRestaurantError("");
-        }
+        // Provjera da li je popust aktivan
+        const isDiscountActive = item.discount_price && now >= discountStart && now <= discountEnd;
+    
+        // Ako je popust aktivan, koristi popust cijenu, inače regularnu cijenu
+        const priceToUse = isDiscountActive ? item.discount_price : item.price;
+    
+        // Novi item s cijenom i restoranom
+        const cartItem = {
+            id: item.id,
+            name: item.name,
+            quantity: quantity,
+            price: priceToUse,
+            restaurantId: item.restaurant_id_food_item, // Dodaj restoran ID
+        };
+    
+        setCart((prevCart) => {
+            const cartRestaurantId = prevCart.length > 0 ? prevCart[0].restaurantId : item.restaurant_id_food_item;
+    
+            // Provjeri da li svi artikli u korpi dolaze iz istog restorana
+            if (prevCart.length > 0 && item.restaurant_id_food_item !== cartRestaurantId) {
+                setRestaurantError("You can only add items from one restaurant at a time.");
+                
+                // Ukloni grešku nakon 3 sekunde
+                setTimeout(() => {
+                    setRestaurantError('');
+                }, 3000);
+                
+                return prevCart; // Ne dodaje novi item
+            }
+    
+            // Provjeri da li item već postoji u korpi
+            const existingItemIndex = prevCart.findIndex(cartItem => cartItem.id === item.id);
+    
+            if (existingItemIndex !== -1) {
+                // Ako postoji, ažuriraj količinu
+                const updatedCart = prevCart.map((cartItem, index) =>
+                    index === existingItemIndex
+                        ? { ...cartItem, quantity: cartItem.quantity + quantity }
+                        : cartItem
+                );
+                setRestaurantError('');
+                return updatedCart;
+            } else {
+                // Ako ne postoji, dodaj novi item
+                setRestaurantError('');
+                return [...prevCart, cartItem];
+            }
+        });
+    
+        // Resetuj količinu na 1 nakon dodavanja u korpu
+        setItemQuantities((prevQuantities) => ({
+            ...prevQuantities,
+            [item.id]: 1,
+        }));
     };
+    
 
     const removeFromCart = (id) => {
         setCart(cart.filter(item => item.id !== id));
@@ -118,7 +160,17 @@ const CustomerShop = () => {
         setIsSubmitting(true);
     
         const orderData = {
-            cart: cart.map(item => ({ food_item_id: item.id, quantity: item.quantity })),
+            cart: cart.map(item => {
+                const now = new Date();
+                const discountStart = new Date(item.discount_start);
+                const discountEnd = new Date(item.discount_end);
+    
+                const isDiscountActive = item.discount_price && now >= discountStart && now <= discountEnd;
+    
+                const priceToUse = isDiscountActive ? item.discount_price : item.price;
+    
+                return { food_item_id: item.id, quantity: item.quantity, price: priceToUse };
+            }),
             payment_method: paymentMethod,
             delivery_time: deliveryTime
         };
@@ -167,9 +219,16 @@ const CustomerShop = () => {
         return cart.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2);
     };
 
-    if (error) {
-        return <div className={styles.error}>{error}</div>;
-    }
+    const isDiscountActive = (discountStart, discountEnd) => {
+        const now = new Date();
+        if (discountStart && discountEnd) {
+            const discountStartDate = new Date(discountStart);
+            const discountEndDate = new Date(discountEnd);
+            return now >= discountStartDate && now <= discountEndDate;
+        }
+        return false;
+    };
+    
 
     const handleGoBack = () => {
         router.back();
@@ -181,6 +240,7 @@ const CustomerShop = () => {
 
     return (
         <div className={styles.foodItemsContainer}>
+
              <button className={styles.backButton} onClick={handleGoBack}>
                 <FaArrowLeft size={20} />
             </button>
@@ -256,30 +316,57 @@ const CustomerShop = () => {
                 </div>
             ) : (
                 <>
-                {restaurantError && <p className={styles.error}>{restaurantError}</p>}
+                    {restaurantError && <p className={styles.error}>{restaurantError}</p>}
                     {filteredRestaurants.map(restaurant => (
                         <div key={restaurant.id} className={styles.restaurantSection}>
                             <h1 className={styles.restaurantTitle}>{restaurant.restaurant_name}</h1>
-                            {restaurant.food_items.map(item => (
-                                <div key={item.id} className={styles.foodItemCard}>
-                                    {item.star && <div className={styles.popularBadge}>★</div>}
-                                    <h4 className={styles.foodItemName}>{item.name}</h4>
-                                    {item.image && <img src={`data:image/jpeg;base64,${item.image}`} alt={item.name} className={styles.foodItemImage} />}
-                                    <p className={styles.foodItemDescription}>{item.description}</p>
-                                    <p className={styles.foodItemPrice}>Price: ${item.price.toFixed(2)}</p>
-                                    <div className={styles.orderSection}>
-                                        <input
-                                            type="number"
-                                            value={itemQuantities[item.id] || 1}
-                                            onChange={(e) => handleQuantityChange(item.id, Number(e.target.value))}
-                                            min="1"
-                                            className={styles.quantityInputInline}
-                                        />
-                                        <button onClick={() => addToCart(item)} className={styles.addButton}>Add to Cart</button>
+                            {restaurant.food_items.map(item => {
+                                const onDiscount = isDiscountActive(item.discount_start, item.discount_end);
+                                const displayedPrice = onDiscount ? item.discount_price : item.price;
+
+                                return (
+                                    <div key={item.id} className={styles.foodItemCard}>
+                                        {item.star && <div className={styles.popularBadge}>★</div>}
+                                        <h4 className={styles.foodItemName}>{item.name}</h4>
+                                        {item.image && (
+                                            <img
+                                                src={`data:image/jpeg;base64,${item.image}`}
+                                                alt={item.name}
+                                                style={{ width: '200px', height: '150px' }}
+                                                className={styles.foodItemImage}
+                                            />
+                                        )}
+                                        <p className={styles.foodItemDescription}>{item.description}</p>
                                         
+                                        <p className={styles.foodItemPrice}>
+                                            {onDiscount ? (
+                                                <>
+                                                    <p className={styles.foodItemPrice}>
+                                                        (Discount Active! <span className={styles.originalPrice}>${item.price.toFixed(2)}</span>)
+                                                        <br />
+                                                        <span className={styles.discountPrice}>${item.discount_price.toFixed(2)}</span>
+                                                    </p>
+                                                </>
+                                            ) : (
+                                                <>Price: ${item.price.toFixed(2)}</>
+                                            )}
+                                        </p>
+
+                                        <div className={styles.orderSection}>
+                                            <input
+                                                type="number"
+                                                value={itemQuantities[item.id] || 1}
+                                                onChange={(e) => handleQuantityChange(item.id, Number(e.target.value))}
+                                                min="1"
+                                                className={styles.quantityInputInline}
+                                            />
+                                            <button onClick={() => addToCart(item)} className={styles.addButton}>
+                                                Add to Cart
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ))}
                 </>
@@ -289,3 +376,4 @@ const CustomerShop = () => {
 };
 
 export default CustomerShop;
+

@@ -109,8 +109,8 @@ const Restaurants = () => {
       if (!newRestaurant.name || !newRestaurant.latitude || !newRestaurant.longitude || !newRestaurant.street || 
         !newRestaurant.city || !newRestaurant.stars || !newRestaurant.category || !newRestaurant.distance_limit) {
       setErrorMessage('All fields are required. Please fill in all fields.');
-      setTimeout(() => setErrorMessage(''), 3000); // Clear error after 3 seconds
-      return; // Prevent the API call if validation fails
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
     }
     setIsCreating(true); 
     try {

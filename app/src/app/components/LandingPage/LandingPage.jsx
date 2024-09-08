@@ -149,7 +149,14 @@ const LandingPage = () => {
                     <ul>
                       {(selectedRestaurant.food_items || []).map((item) => (
                         <li key={item.id} className={styles.foodItem}>
-                          <img src={item.image || '/placeholder.jpg'} alt={item.name} className={styles.foodImage} />
+                          {item.image && (
+                            <img
+                                src={`data:image/jpeg;base64,${item.image}`}
+                                alt={item.name}
+                                style={{ width: '200px', height: '150px' }}
+                                className={styles.foodItemImage}
+                            />
+                        )}
                           <div className={styles.foodDetails}>
                             <h3>{item.name}</h3>
                             <p>Description: {item.description}</p>

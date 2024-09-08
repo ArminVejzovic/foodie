@@ -42,8 +42,8 @@ export default function Register() {
   const [longitude, setLongitude] = useState("");
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState(""); // Za uspešne poruke
-  const [errorMessage, setErrorMessage] = useState(""); // Za greške
+  const [message, setMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     document.title = "Register - Foodie";
@@ -67,7 +67,7 @@ export default function Register() {
         longitude: parseFloat(longitude),
       });
       setMessage("Registration successful! Redirecting to login...");
-      setTimeout(() => router.push("/login"), 2000); // Čekaj 2 sekunde pre nego što preusmeriš
+      setTimeout(() => router.push("/login"), 2000);
     } catch (error) {
       setErrorMessage("Error registering. Please try again.");
       console.error("Error registering", error);

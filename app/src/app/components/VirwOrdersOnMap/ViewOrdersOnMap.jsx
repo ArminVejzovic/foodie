@@ -62,8 +62,9 @@ const ViewOrdersOnMap = () => {
 
   const fetchOrders = async () => {
     try {
+      const username = localStorage.getItem('username');
       const formattedDate = formatDate(selectedDate);
-      const response = await axios.get(`http://localhost:8000/map/orders`, {
+      const response = await axios.get(`http://localhost:8000/map/orders/${username}`, {
         params: {
           selected_date: formattedDate,
           deliverer_id: selectedDeliverer

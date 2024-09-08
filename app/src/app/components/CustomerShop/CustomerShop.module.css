@@ -17,6 +17,18 @@
     border-color: #007bff;
 }
 
+.originalPrice {
+  color: red;
+  text-decoration: line-through;
+  font-weight: bold;
+}
+
+.discountPrice {
+  color: red;
+  font-weight: bold;
+}
+
+
 .noResults {
     text-align: center;
     font-size: 18px;

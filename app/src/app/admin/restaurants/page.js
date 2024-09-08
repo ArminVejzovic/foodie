@@ -1,7 +1,6 @@
 import React from 'react'
 import RestaurantsComponent from '../../components/Restaurants/Restaurants'
 
-
 const Restaurants = () => {
   return (
     <div>
